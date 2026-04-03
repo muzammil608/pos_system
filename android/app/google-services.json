@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "254975640262",
+    "project_id": "pos-muzamil-2026",
+    "storage_bucket": "pos-muzamil-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254975640262:android:1a30a29146779084614dc7",
+        "android_client_info": {
+          "package_name": "com.example.pos_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh5dV2TjOIvPsfiv0gAwRVvqxHuASq0wA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254975640262:android:88e6dc2223a4a1a4614dc7",
+        "android_client_info": {
+          "package_name": "com.muzamil.possystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh5dV2TjOIvPsfiv0gAwRVvqxHuASq0wA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

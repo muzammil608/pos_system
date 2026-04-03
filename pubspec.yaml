@@ -1,0 +1,56 @@
+name: pos_system
+description: "Restaurant POS System (Flutter + Firebase)"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # STATE MANAGEMENT
+  provider: ^6.1.2
+
+  # FIREBASE
+  firebase_core: ^3.6.0
+  cloud_firestore: ^5.4.4
+  firebase_auth: ^5.3.1
+
+  # LOCAL DATABASE (OFFLINE SUPPORT)
+  sqflite: ^2.3.3
+  path: ^1.9.0
+
+  # INTERNET CONNECTIVITY
+  connectivity_plus: ^6.0.5
+
+  # UNIQUE IDS
+  uuid: ^4.5.1
+
+  image: ^3.3.0
+  # DATE FORMATTING
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # ASSETS (uncomment when needed)
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+
+  # FONTS (optional)
+  # fonts:
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
