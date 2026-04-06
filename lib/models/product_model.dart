@@ -12,11 +12,15 @@ class Product {
   });
 
   factory Product.fromMap(Map<String, dynamic> data, String id) {
+    String name = data['name']?.toString().trim() ?? 'Unknown';
+    double price = (data['price'] as num?)?.toDouble() ?? 0.0;
+    String category = data['category']?.toString().trim() ?? 'Other';
+
     return Product(
       id: id,
-      name: data['name'],
-      price: data['price'],
-      category: data['category'],
+      name: name,
+      price: price,
+      category: category,
     );
   }
 

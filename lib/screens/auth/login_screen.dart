@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -10,8 +8,6 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-
     return Scaffold(
       body: Center(
         child: SizedBox(
@@ -31,18 +27,12 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () async {
-                  await auth.login(
-                    emailController.text,
-                    passwordController.text,
-                  );
-
+                onPressed: () {
+                  // ✅ Direct navigation (no Firebase)
                   Navigator.pushReplacementNamed(context, '/pos');
                 },
-                child: auth.isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text("Login"),
-              )
+                child: const Text("Login"),
+              ),
             ],
           ),
         ),
