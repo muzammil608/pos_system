@@ -36,4 +36,13 @@ class ReportService {
       return stats;
     });
   }
+
+  /// Total revenue from completed orders
+  Stream<double> getTotalRevenue() {
+    return _orders.where('status', isEqualTo: 'completed').snapshots().map(
+        (snapshot) => snapshot.docs.fold<double>(
+            0.0,
+            (sum, doc) =>
+                sum + ((doc.data()['total'] as num?)?.toDouble() ?? 0.0)));
+  }
 }

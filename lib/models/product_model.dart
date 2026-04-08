@@ -3,12 +3,14 @@ class Product {
   final String name;
   final double price;
   final String category;
+  final String? imageUrl;
 
   Product({
     required this.id,
     required this.name,
     required this.price,
     required this.category,
+    this.imageUrl,
   });
 
   factory Product.fromMap(Map<String, dynamic> data, String id) {
@@ -21,6 +23,7 @@ class Product {
       name: name,
       price: price,
       category: category,
+      imageUrl: data['imageUrl']?.toString(),
     );
   }
 
@@ -29,6 +32,7 @@ class Product {
       'name': name,
       'price': price,
       'category': category,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }

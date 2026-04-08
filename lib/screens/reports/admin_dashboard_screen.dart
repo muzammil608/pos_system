@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/firebase/report_service.dart';
+import '../../../widgets/status_donut_chart.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -21,33 +22,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// Daily Sales Chart
-            const Text('Daily Sales',
+            /// Order Status Donut
+            const Text('Order Status Distribution',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _reportService.getDailySales(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No sales data'));
-                  }
-                  final sales = snapshot.data!;
-                  return LineChart(LineChartData(
-                    lineBarsData: [
-                      LineChartBarData(
-                          spots: sales
-                              .asMap()
-                              .entries
-                              .map((e) =>
-                                  FlSpot(e.key.toDouble(), e.value['total']))
-                              .toList())
-                    ],
-                  ));
-                },
-              ),
-            ),
+            const StatusDonutChart(size: 280),
             const SizedBox(height: 24),
 
             /// Order Status Stats
@@ -79,6 +58,50 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ),
                           ))
                       .toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            /// Total Revenue Card
+            const Text('Total Revenue',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            StreamBuilder<double>(
+              stream: _reportService.getTotalRevenue(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  );
+                }
+                final revenue = snapshot.data!;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Total Revenue',
+                                style: TextStyle(fontSize: 16)),
+                            Text('Rs ${revenue.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                )),
+                          ],
+                        ),
+                        Icon(Icons.trending_up, size: 48, color: Colors.green),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),

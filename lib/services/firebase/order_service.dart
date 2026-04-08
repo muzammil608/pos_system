@@ -5,13 +5,15 @@ class OrderService {
   final FirestoreService _firestore = FirestoreService();
 
   /// ✅ Create Order (with proper structure)
-  Future<void> createOrder(Map<String, dynamic> orderData) async {
-    await _firestore.orders.add({
+  Future<DocumentReference> createOrder(Map<String, dynamic> orderData) async {
+    final ref = await _firestore.orders.add({
       'items': orderData['items'] ?? [],
       'total': orderData['total'] ?? 0,
       'status': 'pending',
+      'orderNumber': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
     });
+    return ref;
   }
 
   /// ✅ Get Orders (typed stream)

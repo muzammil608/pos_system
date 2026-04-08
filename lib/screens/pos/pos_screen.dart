@@ -4,6 +4,7 @@ import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/product_service.dart';
 import '../../models/product_model.dart';
+import '../../../services/printer/printer_service.dart';
 
 class PosScreen extends StatelessWidget {
   const PosScreen({super.key});
@@ -15,6 +16,10 @@ class PosScreen extends StatelessWidget {
     final cart = Provider.of<CartProvider>(context);
     final orderService = OrderService();
     final productService = ProductService();
+
+    final printerService = PrinterService();
+
+    List<Map<String, dynamic>> originalCart = [];
 
     return Scaffold(
       drawer: Drawer(
@@ -154,16 +159,23 @@ class PosScreen extends StatelessWidget {
                           }
 
                           try {
-                            await orderService.createOrder({
+                            final originalTotal = cart.total;
+                            final orderRef = await orderService.createOrder({
                               'items': cart.items,
-                              'total': cart.total,
+                              'total': originalTotal,
                             });
 
+                            originalCart = List.from(cart.items);
                             cart.clear();
 
+                            PrinterService.showReceiptDialog(context,
+                                orderRef.id, originalCart, originalTotal);
+
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Order sent to kitchen!")),
+                              SnackBar(
+                                  content: Text(
+                                      "Order #${orderRef.id.substring(0, 8)} printed & sent!"),
+                                  duration: const Duration(seconds: 2)),
                             );
 
                             Navigator.pushNamed(context, '/kitchen');

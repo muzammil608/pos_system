@@ -35,6 +35,8 @@ dependencies:
   # DATE FORMATTING
   intl: ^0.19.0
   fl_chart: ^0.70.0
+  image_picker: ^1.1.2
+  firebase_storage: ^12.3.2
 
 dev_dependencies:
   flutter_test:
@@ -45,11 +47,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # ASSETS (uncomment when needed)
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
-
+  assets:
+    - assets/images/
+  
   # FONTS (optional)
   # fonts:
   #   - family: Poppins
