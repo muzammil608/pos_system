@@ -144,9 +144,9 @@ class _KitchenScreenState extends State<KitchenScreen> {
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(16),
                               title: Text(
-                                "Order #$id",
+                                "Order #${data['orderNumber'] ?? id.substring(0, 6)}",
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.bold, fontSize: 18),
                               ),
                               subtitle: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -154,11 +154,18 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   Text('Status: $status'),
-                                  if (data['items'] != null)
+                                  if (data['items'] != null &&
+                                      data['items'].isNotEmpty)
                                     Text(
-                                      '${data['items'].length} items • Rs${data['total']}',
+                                      '${data['items'][0]['name']} (${data['items'].length} items)',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                  Text(
+                                    'Rs ${(data['total'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                    style: TextStyle(color: Colors.green[600]),
+                                  ),
                                   Text(
                                     'Time: ${DateTime.now().toString().split(' ')[1].substring(0, 8)}',
                                   ),
@@ -182,9 +189,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                             },
                                             child: const Text('Complete'),
                                           )
-                                        : const Chip(
-                                            label: Text('Done'),
-                                          ),
+                                        : const Chip(label: Text('Done')),
                               ),
                             ),
                           );

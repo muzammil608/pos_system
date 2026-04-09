@@ -5,15 +5,18 @@ import 'cart_provider.dart';
 class OrderProvider with ChangeNotifier {
   final OrderService _orderService = OrderService();
 
-  Future<void> placeOrder(CartProvider cart) async {
-    final order = {
-      'items': cart.items,
-      'total': cart.total,
-      'status': 'pending',
-      'createdAt': DateTime.now().toIso8601String(),
-    };
-
-    await _orderService.createOrder(order);
+  Future<void> placeOrder({
+    required CartProvider cart,
+    String orderType = 'takeaway',
+    String? tableNumber,
+  }) async {
+    await _orderService.createOrder(
+      items: cart.items,
+      total: cart.total,
+      orderType: orderType,
+      tableNumber: tableNumber,
+    );
     cart.clear();
+    notifyListeners();
   }
 }

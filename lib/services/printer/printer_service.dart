@@ -6,14 +6,22 @@ import 'receipt_template.dart';
 class PrinterService {
   static Future<void> showReceiptDialog(
     BuildContext context,
-    String orderId,
+    int orderNumber,
     List<Map<String, dynamic>> cartItems,
-    double total,
-  ) async {
-    final receipt = ReceiptTemplate.generate(orderId, cartItems, total);
+    double total, {
+    String orderType = 'takeaway',
+    String? tableNumber,
+  }) async {
+    final receipt = ReceiptTemplate.generate(
+      orderNumber.toString(),
+      cartItems,
+      total,
+      orderType: orderType,
+      tableNumber: tableNumber,
+    );
 
     if (kDebugMode) {
-      print("🖨️ RECEIPT (Dialog + Console):");
+      print("🖨️ RECEIPT #${orderNumber}:");
       print(receipt);
       print("🖨️ END");
     }
@@ -21,7 +29,7 @@ class PrinterService {
     showDialog(
       context: context,
       builder: (ctx) => ReceiptDialog(
-        orderId: orderId,
+        orderId: orderNumber.toString(),
         receiptText: receipt,
       ),
     );

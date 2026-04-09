@@ -4,31 +4,64 @@ import 'firestore_service.dart';
 class OrderService {
   final FirestoreService _firestore = FirestoreService();
 
-  /// ✅ Create Order (with proper structure)
-  Future<DocumentReference> createOrder(Map<String, dynamic> orderData) async {
+  Future<DocumentReference> createOrder({
+    required List<Map<String, dynamic>> items,
+    required double total,
+    String orderType = 'takeaway',
+    String? tableNumber,
+  }) async {
+    // Sequential order number using transaction on dedicated counter collection
+    final counterRef =
+        FirebaseFirestore.instance.collection('counters').doc('order_number');
+    int nextNumber = await FirebaseFirestore.instance
+        .runTransaction<int>((transaction) async {
+      final snap = await transaction.get(counterRef);
+      int newNumber = 1;
+      if (snap.exists) {
+        newNumber = snap.data()?['number'] as int? ?? 1;
+      }
+      transaction.set(
+          counterRef, {'number': newNumber + 1}, SetOptions(merge: true));
+      return newNumber;
+    });
+
     final ref = await _firestore.orders.add({
-      'items': orderData['items'] ?? [],
-      'total': orderData['total'] ?? 0,
+      'items': items,
+      'total': total,
       'status': 'pending',
-      'orderNumber': FieldValue.serverTimestamp(),
+      'orderType': orderType,
+      if (tableNumber != null) 'tableNumber': tableNumber,
+      'orderNumber': nextNumber,
       'createdAt': FieldValue.serverTimestamp(),
     });
     return ref;
   }
 
-  /// ✅ Get Orders (typed stream)
+  Stream<Map<String, int>> getTableOccupancy() {
+    return _firestore.orders
+        .where('status', whereIn: ['pending', 'ready'])
+        .snapshots()
+        .map((snapshot) {
+          final occupied = <String, int>{};
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            final table = data['tableNumber'] as String?;
+            if (table != null && data['orderType'] == 'dine_in') {
+              occupied[table] = (occupied[table] ?? 0) + 1;
+            }
+          }
+          return occupied;
+        });
+  }
+
   Stream<QuerySnapshot> getOrders() {
     return _firestore.orders.orderBy('createdAt', descending: true).snapshots();
   }
 
-  /// ✅ Update Order Status
   Future<void> updateStatus(String id, String status) async {
-    await _firestore.orders.doc(id).update({
-      'status': status,
-    });
+    await _firestore.orders.doc(id).update({'status': status});
   }
 
-  /// ✅ Complete Order (bulk ready → completed)
   Future<void> completeReadyOrders() async {
     final snapshot =
         await _firestore.orders.where('status', isEqualTo: 'ready').get();
