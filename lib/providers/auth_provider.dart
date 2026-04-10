@@ -10,9 +10,23 @@ class AuthProvider with ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    await _authService.login(email, password);
+    try {
+      await _authService.login(email, password);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 
-    isLoading = false;
+  Future<void> logout() async {
+    isLoading = true;
     notifyListeners();
+
+    try {
+      await _authService.logout();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 }

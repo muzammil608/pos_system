@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../services/firebase/report_service.dart';
 import '../../../widgets/status_donut_chart.dart';
 
@@ -98,23 +97,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 24),
 
-            /// Total Revenue Card
-            const Text('Total Revenue',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            /// Today's Revenue Card (matches app purple theme)
+            const Text('Today\'s Revenue',
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple)),
             const SizedBox(height: 16),
             StreamBuilder<double>(
-              stream: _reportService.getTotalRevenue(),
+              stream: _reportService.getTodayRevenue(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Card(
+                  return Card(
+                    color: Colors.purple[50],
                     child: Padding(
-                      padding: EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(32),
                       child: Center(child: CircularProgressIndicator()),
                     ),
                   );
                 }
                 final revenue = snapshot.data!;
                 return Card(
+                  color: Colors.purple[50],
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Row(
@@ -123,17 +127,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Total Revenue',
-                                style: TextStyle(fontSize: 16)),
+                            Text('Today\'s Revenue',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.purple[800])),
                             Text('Rs ${revenue.toStringAsFixed(0)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: Colors.purple,
                                 )),
                           ],
                         ),
-                        Icon(Icons.trending_up, size: 48, color: Colors.green),
+                        Icon(Icons.trending_up, size: 48, color: Colors.purple),
                       ],
                     ),
                   ),

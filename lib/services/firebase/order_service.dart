@@ -9,6 +9,8 @@ class OrderService {
     required double total,
     String orderType = 'takeaway',
     String? tableNumber,
+    String? customerName,
+    String paymentMethod = 'cash',
   }) async {
     // Sequential order number using transaction on dedicated counter collection
     final counterRef =
@@ -31,10 +33,23 @@ class OrderService {
       'status': 'pending',
       'orderType': orderType,
       if (tableNumber != null) 'tableNumber': tableNumber,
+      if (customerName != null && customerName.trim().isNotEmpty)
+        'customerName': customerName.trim(),
+      'paymentMethod': paymentMethod,
       'orderNumber': nextNumber,
       'createdAt': FieldValue.serverTimestamp(),
     });
     return ref;
+  }
+
+  Future<void> deleteCompletedOrders() async {
+    final snapshot =
+        await _firestore.orders.where('status', isEqualTo: 'completed').get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 
   Stream<Map<String, int>> getTableOccupancy() {

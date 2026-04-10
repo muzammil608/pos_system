@@ -9,7 +9,7 @@ class ReportService {
     return _orders.snapshots().map((snapshot) {
       final Map<String, double> dailyTotals = {};
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final createdAt = data['createdAt'] as Timestamp?;
         if (createdAt != null) {
           final date =
@@ -37,12 +37,26 @@ class ReportService {
     });
   }
 
-  /// Total revenue from completed orders
-  Stream<double> getTotalRevenue() {
-    return _orders.where('status', isEqualTo: 'completed').snapshots().map(
-        (snapshot) => snapshot.docs.fold<double>(
-            0.0,
-            (sum, doc) =>
-                sum + ((doc.data()['total'] as num?)?.toDouble() ?? 0.0)));
+  /// Today's revenue from all orders (today's date)
+  Stream<double> getTodayRevenue() {
+    return _orders.snapshots().map((snapshot) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      double total = 0.0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] as Timestamp?;
+        if (createdAt != null) {
+          final orderDate = createdAt.toDate();
+          final orderToday =
+              DateTime(orderDate.year, orderDate.month, orderDate.day);
+          if (orderToday.isAtSameMomentAs(today)) {
+            total += (data['total'] as num?)?.toDouble() ?? 0.0;
+          }
+        }
+      }
+      return total;
+    });
   }
 }

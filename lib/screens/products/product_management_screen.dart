@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
-import '../../services/firebase/product_service.dart';
-import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
-import '../../../providers/auth_provider.dart';
 
 class ProductManagementScreen extends StatefulWidget {
   const ProductManagementScreen({super.key});
@@ -38,8 +35,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
 
       String? result;
       if (_editingProduct != null) {
-        // Update would require ID - simplified to create new for now
-        result = await service.createProduct(
+        result = await service.updateProduct(
+          id: _editingProduct!.id,
           name: name,
           price: price,
           category: category,
@@ -70,10 +67,19 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
   }
 
   void _deleteProduct(Product product) async {
-    // Simplified - real delete needs Firestore doc ID from service
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Delete implemented in service')),
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await Provider.of<ProductProvider>(context, listen: false)
+        .deleteProduct(product.id);
+
+    if (!mounted) return;
+
+    messenger.showSnackBar(
+      SnackBar(content: Text(result ?? 'Unable to delete product')),
     );
+
+    if (_editingProduct?.id == product.id) {
+      _clearForm();
+    }
   }
 
   void _editProduct(Product product) {

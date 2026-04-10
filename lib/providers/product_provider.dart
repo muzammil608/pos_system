@@ -4,7 +4,7 @@ import '../models/product_model.dart';
 
 class ProductProvider extends ChangeNotifier {
   final ProductService _service = ProductService();
-  List<Product> _products = [];
+  final List<Product> _products = [];
   bool _isLoading = false;
 
   List<Product> get products => _products;
@@ -31,10 +31,40 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> updateProduct({
+    required String id,
+    required String name,
+    required double price,
+    required String category,
+  }) async {
+    setLoading(true);
+    try {
+      final result = await _service.updateProduct(
+        id: id,
+        name: name,
+        price: price,
+        category: category,
+      );
+      notifyListeners();
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<String?> deleteProduct(String id) async {
+    setLoading(true);
+    try {
+      final result = await _service.deleteProduct(id);
+      notifyListeners();
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   void setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
-
-  // Add update/delete methods later
 }

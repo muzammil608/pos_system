@@ -83,5 +83,4 @@ class DefaultFirebaseOptions {
     authDomain: 'pos-muzamil-2026.firebaseapp.com',
     storageBucket: 'pos-muzamil-2026.firebasestorage.app',
   );
-
 }

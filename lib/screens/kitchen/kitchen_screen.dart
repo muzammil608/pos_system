@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/report_service.dart';
@@ -14,11 +15,50 @@ class KitchenScreen extends StatefulWidget {
 class _KitchenScreenState extends State<KitchenScreen> {
   final OrderService _service = OrderService();
   final ReportService _reportService = ReportService();
+  final Set<String> _hiddenOrderIds = <String>{};
+  final Set<String> _loadedOrderIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.purple),
+              child: Text(
+                'Kitchen Menu',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.point_of_sale),
+              title: const Text('POS'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/pos');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics),
+              title: const Text('Admin Dashboard'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/admin');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_restaurant),
+              title: const Text('Tables'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/tables');
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         title: const Text("Kitchen Dashboard"),
         backgroundColor: Colors.purple,
@@ -27,9 +67,9 @@ class _KitchenScreenState extends State<KitchenScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false)
-                  .login('demo@pos.com', 'password');
+            onPressed: () async {
+              await Provider.of<AuthProvider>(context, listen: false).logout();
+              if (!mounted) return;
               Navigator.pushReplacementNamed(context, '/');
             },
           ),
@@ -99,7 +139,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                   'Ready', Colors.orange, '${stats['ready']}')),
                           Expanded(
                               child: buildMetricCard('Completed', Colors.green,
-                                  'Rs ${stats['completed']}')),
+                                  '${stats['completed']}')),
                         ],
                       );
                     },
@@ -130,7 +170,21 @@ class _KitchenScreenState extends State<KitchenScreen> {
                         );
                       }
 
-                      final orders = snapshot.data!.docs;
+                      final orders = snapshot.data!.docs
+                          .where((order) => !_hiddenOrderIds.contains(order.id))
+                          .toList();
+                      _loadedOrderIds
+                        ..clear()
+                        ..addAll(snapshot.data!.docs.map((order) => order.id));
+
+                      if (orders.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Center(
+                            child: Text('No visible orders'),
+                          ),
+                        );
+                      }
 
                       return Column(
                         children: orders.map((order) {
@@ -138,6 +192,14 @@ class _KitchenScreenState extends State<KitchenScreen> {
                           final id = order.id;
                           final status =
                               data['status']?.toString() ?? 'unknown';
+                          final createdAt = data['createdAt'] as Timestamp?;
+                          final createdTime = createdAt?.toDate();
+                          final customerName =
+                              data['customerName']?.toString().trim();
+                          final paymentMethod =
+                              data['paymentMethod']?.toString() ?? 'cash';
+                          final orderType =
+                              data['orderType']?.toString() ?? 'takeaway';
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
@@ -162,12 +224,19 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                           fontWeight: FontWeight.bold),
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                  if (customerName != null &&
+                                      customerName.isNotEmpty)
+                                    Text('Customer: $customerName'),
+                                  Text(
+                                      'Type: ${orderType.replaceAll('_', ' ')}'),
+                                  Text(
+                                      'Payment: ${paymentMethod.toUpperCase()}'),
                                   Text(
                                     'Rs ${(data['total'] as num?)?.toStringAsFixed(0) ?? '0'}',
                                     style: TextStyle(color: Colors.green[600]),
                                   ),
                                   Text(
-                                    'Time: ${DateTime.now().toString().split(' ')[1].substring(0, 8)}',
+                                    'Time: ${_formatTime(createdTime)}',
                                   ),
                                 ],
                               ),
@@ -182,13 +251,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                         child: const Text('Ready'),
                                       )
                                     : status == 'ready'
-                                        ? ElevatedButton(
-                                            onPressed: () async {
-                                              await _service.updateStatus(
-                                                  id, 'completed');
-                                            },
-                                            child: const Text('Complete'),
-                                          )
+                                        ? const Chip(label: Text('Ready'))
                                         : const Chip(label: Text('Done')),
                               ),
                             ),
@@ -203,17 +266,20 @@ class _KitchenScreenState extends State<KitchenScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        child: ElevatedButton.icon(
-          onPressed: () => Navigator.pushNamed(context, '/pos'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.purple,
-            foregroundColor: Colors.white,
-          ),
-          icon: const Icon(Icons.point_of_sale),
-          label: const Text('POS'),
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          setState(() {
+            _hiddenOrderIds.addAll(_loadedOrderIds);
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Kitchen history removed from screen'),
+            ),
+          );
+        },
+        icon: const Icon(Icons.delete_sweep),
+        label: const Text('Delete History'),
       ),
     );
   }
@@ -238,5 +304,14 @@ class _KitchenScreenState extends State<KitchenScreen> {
         ],
       ),
     );
+  }
+
+  String _formatTime(DateTime? dateTime) {
+    if (dateTime == null) return '--:--:--';
+
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final second = dateTime.second.toString().padLeft(2, '0');
+    return '$hour:$minute:$second';
   }
 }

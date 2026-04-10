@@ -1,10 +1,14 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/cart_provider.dart';
-import '../../services/firebase/product_service.dart';
+
 import '../../models/product_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
-import '../../../services/printer/printer_service.dart';
+import '../../services/firebase/product_service.dart';
+import '../../services/printer/printer_service.dart';
 
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key});
@@ -14,24 +18,221 @@ class PosScreen extends StatefulWidget {
 }
 
 class _PosScreenState extends State<PosScreen> {
-  String _orderType = 'takeaway';
-  String? _tableNumber;
+  final ProductService _productService = ProductService();
+  final OrderService _orderService = OrderService();
+  final Map<String, String> _knownOrderStatuses = <String, String>{};
+  StreamSubscription<QuerySnapshot>? _ordersSubscription;
+  bool _isReadyAlertOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenForReadyOrders();
+  }
+
+  @override
+  void dispose() {
+    _ordersSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenForReadyOrders() {
+    _ordersSubscription = _orderService.getOrders().listen((snapshot) async {
+      if (!mounted || _isReadyAlertOpen) return;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final currentStatus = data['status']?.toString() ?? 'unknown';
+        final previousStatus = _knownOrderStatuses[doc.id];
+        _knownOrderStatuses[doc.id] = currentStatus;
+
+        if (currentStatus != 'ready') continue;
+        if (previousStatus == null || previousStatus == 'ready') continue;
+
+        _isReadyAlertOpen = true;
+
+        final orderLabel =
+            'Order #${data['orderNumber'] ?? doc.id.substring(0, 6)}';
+        final customerName = data['customerName']?.toString().trim();
+
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('Order Ready To Serve'),
+              content: Text(
+                customerName != null && customerName.isNotEmpty
+                    ? '$orderLabel for $customerName is ready to serve.'
+                    : '$orderLabel is ready to serve.',
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+
+        _isReadyAlertOpen = false;
+        if (!mounted) return;
+        break;
+      }
+
+      final activeIds = snapshot.docs.map((doc) => doc.id).toSet();
+      _knownOrderStatuses.removeWhere((id, _) => !activeIds.contains(id));
+    });
+  }
+
+  void _showReadyOrdersSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(sheetContext).size.height * 0.75,
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.fact_check),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cashier Ready Orders',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: StreamBuilder(
+                    stream: _orderService.getOrders(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text('No ready orders'));
+                      }
+
+                      final readyOrders = snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        return data['status'] == 'ready';
+                      }).toList();
+
+                      if (readyOrders.isEmpty) {
+                        return const Center(child: Text('No ready orders'));
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        itemCount: readyOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = readyOrders[index];
+                          final data = order.data() as Map<String, dynamic>;
+                          final orderId = order.id;
+                          final orderType =
+                              data['orderType']?.toString() ?? 'takeaway';
+                          final paymentMethod =
+                              data['paymentMethod']?.toString() ?? 'cash';
+                          final customerName =
+                              data['customerName']?.toString().trim();
+                          final orderLabel =
+                              'Order #${data['orderNumber'] ?? orderId.substring(0, 6)}';
+                          final items = List<Map<String, dynamic>>.from(
+                            (data['items'] as List? ?? []).map(
+                              (item) => Map<String, dynamic>.from(item as Map),
+                            ),
+                          );
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(16),
+                              title: Text(
+                                orderLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    items.isNotEmpty
+                                        ? '${items.first['name']} (${items.length} items)'
+                                        : 'No items',
+                                  ),
+                                  if (customerName != null &&
+                                      customerName.isNotEmpty)
+                                    Text('Customer: $customerName'),
+                                  Text(
+                                    'Rs ${((data['total'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)}',
+                                  ),
+                                ],
+                              ),
+                              trailing: ElevatedButton(
+                                onPressed: () async {
+                                  await PrinterService.showReceiptDialog(
+                                    context,
+                                    (data['orderNumber'] ?? orderId).toString(),
+                                    items,
+                                    (data['total'] as num?)?.toDouble() ?? 0.0,
+                                    orderType: orderType,
+                                    tableNumber:
+                                        data['tableNumber']?.toString(),
+                                    customerName: customerName,
+                                    paymentMethod: paymentMethod,
+                                    servedBy: 'Cashier',
+                                  );
+
+                                  await _orderService.updateStatus(
+                                    orderId,
+                                    'completed',
+                                  );
+                                },
+                                child: const Text('Complete'),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<CartProvider>(
       builder: (context, cart, child) {
-        final productService = ProductService();
-        final orderService = OrderService();
-
         return Scaffold(
           drawer: Drawer(
             child: ListView(
               children: [
                 const DrawerHeader(
                   decoration: BoxDecoration(color: Colors.purple),
-                  child: Text('POS Menu',
-                      style: TextStyle(color: Colors.white, fontSize: 20)),
+                  child: Text(
+                    'POS Menu',
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.analytics),
@@ -60,77 +261,30 @@ class _PosScreenState extends State<PosScreen> {
               ],
             ),
           ),
-          appBar: AppBar(title: const Text("POS")),
+          appBar: AppBar(
+            title: const Text("POS"),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.fact_check),
+                tooltip: 'Ready Orders',
+                onPressed: () => _showReadyOrdersSheet(context),
+              ),
+            ],
+          ),
           body: Column(
             children: [
-              // Order Options Bar
-              Container(
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _orderType,
-                        decoration: const InputDecoration(
-                          labelText: 'Order Type *',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'takeaway', child: Text('Takeaway')),
-                          DropdownMenuItem(
-                              value: 'dine_in', child: Text('Dine In')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _orderType = value ?? 'takeaway';
-                            if (value != 'dine_in') _tableNumber = null;
-                          });
-                        },
-                      ),
-                    ),
-                    if (_orderType == 'dine_in') ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButtonFormField<String?>(
-                          value: _tableNumber,
-                          decoration: const InputDecoration(
-                            labelText: 'Table *',
-                            border: OutlineInputBorder(),
-                          ),
-                          isExpanded: true,
-                          hint: const Text('1-20'),
-                          items: List.generate(
-                              20,
-                              (i) => DropdownMenuItem(
-                                    value: '${i + 1}',
-                                    child: Text('T${i + 1}'),
-                                  )),
-                          onChanged: (value) =>
-                              setState(() => _tableNumber = value),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
               Expanded(
-                child: Row(
+                child: Column(
                   children: [
-                    // Products Grid
                     Expanded(
                       child: StreamBuilder<List<Product>>(
-                        stream: productService.streamProducts,
+                        stream: _productService.streamProducts,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
-                                child: CircularProgressIndicator());
+                              child: CircularProgressIndicator(),
+                            );
                           }
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
                             return const Center(child: Text('No products'));
@@ -163,7 +317,8 @@ class _PosScreenState extends State<PosScreen> {
                                           product.name,
                                           textAlign: TextAlign.center,
                                           style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -184,135 +339,46 @@ class _PosScreenState extends State<PosScreen> {
                         },
                       ),
                     ),
-                    // Cart with Edit/Delete
                     Container(
-                      width: 340,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        border:
-                            Border(left: BorderSide(color: Colors.grey[300]!)),
-                      ),
-                      child: Column(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      color: Colors.green,
+                      child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.shopping_cart,
-                                    color: Colors.blue),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Cart (${cart.items.length})',
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
                           Expanded(
-                            child: ListView.builder(
-                              itemCount: cart.items.length,
-                              itemBuilder: (_, i) {
-                                final item = cart.items[i];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 4),
-                                  child: ListTile(
-                                    dense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 4),
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.blue.shade100,
-                                      child: Text('${i + 1}'),
-                                    ),
-                                    title: Text(
-                                      item['name'].toString(),
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    subtitle: Text(
-                                        'Rs ${item['price'].toStringAsFixed(0)}'),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit,
-                                              color: Colors.orange, size: 20),
-                                          onPressed: () {
-                                            _showEditDialog(
-                                                context, i, item, cart);
-                                          },
-                                          tooltip: 'Edit',
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete,
-                                              color: Colors.red, size: 20),
-                                          onPressed: () => cart.removeItem(i),
-                                          tooltip: 'Delete',
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: cart.items.isEmpty
+                                  ? null
+                                  : () =>
+                                      Navigator.pushNamed(context, '/checkout'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              icon: const Icon(Icons.shopping_cart),
+                              label: Text(
+                                'Proceed to Checkout (${cart.items.length} items)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
-                          // Total & Order Button
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border(
-                                  top: BorderSide(color: Colors.grey[300]!)),
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text('Total:',
-                                        style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold)),
-                                    Text(
-                                      'Rs ${cart.total.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    onPressed: cart.items.isEmpty ||
-                                            (_orderType == 'dine_in' &&
-                                                _tableNumber == null)
-                                        ? null
-                                        : () => _placeOrder(
-                                            context, cart, orderService),
-                                    icon: const Icon(Icons.send),
-                                    label: const Text('Place Order'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showReadyOrdersSheet(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.white70),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              icon: const Icon(Icons.fact_check),
+                              label: const Text('Ready Orders'),
                             ),
                           ),
                         ],
@@ -326,100 +392,5 @@ class _PosScreenState extends State<PosScreen> {
         );
       },
     );
-  }
-
-  void _showEditDialog(BuildContext context, int index,
-      Map<String, dynamic> item, CartProvider cart) {
-    final nameController = TextEditingController(text: item['name']);
-    final priceController =
-        TextEditingController(text: item['price'].toString());
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Item'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: priceController,
-              decoration: const InputDecoration(labelText: 'Price'),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              cart.items[index] = {
-                'name': nameController.text,
-                'price': double.tryParse(priceController.text) ?? 0,
-              };
-              cart.notifyListeners();
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _placeOrder(BuildContext context, CartProvider cart,
-      OrderService orderService) async {
-    if (_orderType == 'dine_in' && _tableNumber == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select table for Dine In')),
-      );
-      return;
-    }
-
-    try {
-      final originalTotal = cart.total;
-      await orderService.createOrder(
-        items: List.from(cart.items),
-        total: originalTotal,
-        orderType: _orderType,
-        tableNumber: _tableNumber,
-      );
-      cart.clear();
-
-      final orderRef = await orderService.createOrder(
-        items: List.from(cart.items),
-        total: originalTotal,
-        orderType: _orderType,
-        tableNumber: _tableNumber,
-      );
-      cart.clear();
-
-      await PrinterService.showReceiptDialog(
-        context,
-        orderRef.id.hashCode.abs() % 1000 + 1, // temp until sequential
-        List.from(cart.items),
-        originalTotal,
-        orderType: _orderType,
-        tableNumber: _tableNumber,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                '✅ $_orderType${_tableNumber != null ? ' Table $_tableNumber' : ''}')),
-      );
-
-      Navigator.pushNamed(context, '/kitchen');
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
   }
 }

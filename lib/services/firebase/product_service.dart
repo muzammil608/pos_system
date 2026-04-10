@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:math';
 import 'package:uuid/uuid.dart';
 import '../../models/product_model.dart';
 import 'firestore_service.dart';
@@ -12,16 +10,12 @@ class ProductService {
 
   Stream<List<Product>> get streamProducts {
     return _firestore.products.snapshots().map((snapshot) {
-      print('Products snapshot: ${snapshot.docs.length} docs');
-      final productList = snapshot.docs
+      return snapshot.docs
           .map((doc) {
-            print('Doc ${doc.id}: ${doc.data()}');
             return Product.fromMap(doc.data(), doc.id);
           })
-          .where((product) => product.name != 'Unknown') // Filter bad data
+          .where((product) => product.name != 'Unknown')
           .toList();
-      print('Parsed ${productList.length} products');
-      return productList;
     });
   }
 
@@ -49,10 +43,35 @@ class ProductService {
       };
 
       await _firestore.products.add(productData);
-      print('Product created with image: $imageUrl');
       return 'Product created successfully';
     } catch (e) {
-      print('Create product error: $e');
+      return 'Error: $e';
+    }
+  }
+
+  Future<String?> updateProduct({
+    required String id,
+    required String name,
+    required double price,
+    required String category,
+  }) async {
+    try {
+      await _firestore.products.doc(id).update({
+        'name': name,
+        'price': price,
+        'category': category,
+      });
+      return 'Product updated successfully';
+    } catch (e) {
+      return 'Error: $e';
+    }
+  }
+
+  Future<String?> deleteProduct(String id) async {
+    try {
+      await _firestore.products.doc(id).delete();
+      return 'Product deleted successfully';
+    } catch (e) {
       return 'Error: $e';
     }
   }
