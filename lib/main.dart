@@ -8,6 +8,7 @@ import 'providers/table_provider.dart';
 import 'providers/product_provider.dart';
 
 import 'routes/app_routes.dart';
+import 'core/theme/app_theme.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
+        theme: AppTheme.lightTheme,
         routes: AppRoutes.routes,
       ),
     );

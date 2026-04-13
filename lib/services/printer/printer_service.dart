@@ -11,11 +11,13 @@ class PrinterService {
     String? tableNumber,
     String? customerName,
     String paymentMethod = 'cash',
+    double tenderedAmount = 0.0,
+    double change = 0.0,
     String servedBy = 'Staff',
   }) async {
-    final subtotal = total;
-    final tax = subtotal * 0.08;
-    final grandTotal = subtotal + tax;
+    final grandTotal = total;
+    final subtotal = grandTotal / 1.13;
+    final tax = grandTotal - subtotal;
     final resolvedCustomerName =
         (customerName != null && customerName.trim().isNotEmpty)
             ? customerName.trim()
@@ -32,16 +34,16 @@ class PrinterService {
       context: context,
       builder: (ctx) => ReceiptDialog(
         companyName: 'ORION PIZZA RESTAURANT',
-        phone: '+92 300 0000000',
-        email: 'support@orionpizza.com',
+        phone: '+92 3177921817',
+        email: 'muzmalabbas579@gmail.com',
         website: 'www.orionpizza.com',
         servedBy: servedBy,
         customerName: resolvedCustomerName,
         orderType: resolvedOrderType,
         items: cartItems,
         total: grandTotal,
-        cash: grandTotal,
-        change: 0,
+        cash: tenderedAmount,
+        change: change,
         tax: tax,
         orderNo: orderId,
         date: formattedDate,

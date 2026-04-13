@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
 
@@ -17,6 +18,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _tableNumber;
   String _customerName = '';
   String _paymentMethod = 'cash';
+  double _tenderedAmount = 0.0;
   bool _isSubmitting = false;
 
   Future<void> _showEditItemDialog(
@@ -89,7 +91,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             children: [
               /// TOP FORM
               Container(
-                color: Colors.grey[100],
+                color: AppTheme.surface,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
@@ -173,12 +175,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             onChanged: (value) {
                               setState(() {
                                 _paymentMethod = value ?? 'cash';
+                                if (value != 'cash') _tenderedAmount = 0.0;
                               });
                             },
                           ),
                         ),
                       ],
                     ),
+                    if (_paymentMethod == 'cash') ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        keyboardType:
+                            TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (value) => setState(() {
+                          _tenderedAmount = double.tryParse(value) ?? 0.0;
+                        }),
+                        decoration: const InputDecoration(
+                          labelText: 'Cash Tendered',
+                          border: OutlineInputBorder(),
+                          prefixText: 'Rs ',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Change Due:',
+                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Rs ${(_tenderedAmount - cart.total).toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: (_tenderedAmount >= cart.total)
+                                    ? Colors.green
+                                    : Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -216,7 +259,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   IconButton(
                                     icon: const Icon(
                                       Icons.edit,
-                                      color: Colors.blue,
+                                      color: AppTheme.secondary,
                                     ),
                                     onPressed: () => _showEditItemDialog(
                                       context,
@@ -228,7 +271,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   IconButton(
                                     icon: const Icon(
                                       Icons.delete,
-                                      color: Colors.red,
+                                      color: AppTheme.danger,
                                     ),
                                     onPressed: () => cart.removeItem(i),
                                   ),
@@ -247,7 +290,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: AppTheme.secondary.withOpacity(0.16),
                       blurRadius: 4,
                       offset: const Offset(0, -2),
                     )
@@ -289,6 +332,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   return;
                                 }
 
+                                if (_paymentMethod == 'cash' &&
+                                    _tenderedAmount < cart.total) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Tendered amount must be >= total'),
+                                    ),
+                                  );
+                                  setState(() => _isSubmitting = false);
+                                  return;
+                                }
+
+                                final changeAmount = _paymentMethod == 'cash'
+                                    ? _tenderedAmount - cart.total
+                                    : 0.0;
+
                                 setState(() => _isSubmitting = true);
 
                                 try {
@@ -303,6 +362,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     tableNumber: _tableNumber,
                                     customerName: _customerName,
                                     paymentMethod: _paymentMethod,
+                                    tenderedAmount: _paymentMethod == 'cash'
+                                        ? _tenderedAmount
+                                        : 0.0,
+                                    change: changeAmount,
                                   );
 
                                   if (!mounted) return;
@@ -344,7 +407,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 32, vertical: 16),

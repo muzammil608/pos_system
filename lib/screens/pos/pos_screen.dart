@@ -1,9 +1,7 @@
-import 'dart:async';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
@@ -20,70 +18,14 @@ class PosScreen extends StatefulWidget {
 class _PosScreenState extends State<PosScreen> {
   final ProductService _productService = ProductService();
   final OrderService _orderService = OrderService();
-  final Map<String, String> _knownOrderStatuses = <String, String>{};
-  StreamSubscription<QuerySnapshot>? _ordersSubscription;
-  bool _isReadyAlertOpen = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _listenForReadyOrders();
-  }
+  int _readyOrderCount(AsyncSnapshot snapshot) {
+    if (!snapshot.hasData) return 0;
 
-  @override
-  void dispose() {
-    _ordersSubscription?.cancel();
-    super.dispose();
-  }
-
-  void _listenForReadyOrders() {
-    _ordersSubscription = _orderService.getOrders().listen((snapshot) async {
-      if (!mounted || _isReadyAlertOpen) return;
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final currentStatus = data['status']?.toString() ?? 'unknown';
-        final previousStatus = _knownOrderStatuses[doc.id];
-        _knownOrderStatuses[doc.id] = currentStatus;
-
-        if (currentStatus != 'ready') continue;
-        if (previousStatus == null || previousStatus == 'ready') continue;
-
-        _isReadyAlertOpen = true;
-
-        final orderLabel =
-            'Order #${data['orderNumber'] ?? doc.id.substring(0, 6)}';
-        final customerName = data['customerName']?.toString().trim();
-
-        await showDialog<void>(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) {
-            return AlertDialog(
-              title: const Text('Order Ready To Serve'),
-              content: Text(
-                customerName != null && customerName.isNotEmpty
-                    ? '$orderLabel for $customerName is ready to serve.'
-                    : '$orderLabel is ready to serve.',
-              ),
-              actions: [
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-
-        _isReadyAlertOpen = false;
-        if (!mounted) return;
-        break;
-      }
-
-      final activeIds = snapshot.docs.map((doc) => doc.id).toSet();
-      _knownOrderStatuses.removeWhere((id, _) => !activeIds.contains(id));
-    });
+    return snapshot.data!.docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['status'] == 'ready';
+    }).length;
   }
 
   void _showReadyOrdersSheet(BuildContext context) {
@@ -194,6 +136,13 @@ class _PosScreenState extends State<PosScreen> {
                                         data['tableNumber']?.toString(),
                                     customerName: customerName,
                                     paymentMethod: paymentMethod,
+                                    tenderedAmount:
+                                        (data['tenderedAmount'] as num?)
+                                                ?.toDouble() ??
+                                            0.0,
+                                    change:
+                                        (data['change'] as num?)?.toDouble() ??
+                                            0.0,
                                     servedBy: 'Cashier',
                                   );
 
@@ -227,11 +176,49 @@ class _PosScreenState extends State<PosScreen> {
           drawer: Drawer(
             child: ListView(
               children: [
-                const DrawerHeader(
-                  decoration: BoxDecoration(color: Colors.purple),
-                  child: Text(
-                    'POS Menu',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.primary, AppTheme.secondary],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'POS System',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Restaurant POS',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 ListTile(
@@ -264,10 +251,27 @@ class _PosScreenState extends State<PosScreen> {
           appBar: AppBar(
             title: const Text("POS"),
             actions: [
+              StreamBuilder(
+                stream: _orderService.getOrders(),
+                builder: (context, snapshot) {
+                  final readyCount = _readyOrderCount(snapshot);
+
+                  return IconButton(
+                    tooltip: 'Ready Orders',
+                    onPressed: () => _showReadyOrdersSheet(context),
+                    icon: Badge(
+                      isLabelVisible: readyCount > 0,
+                      label: Text('$readyCount'),
+                      child: const Icon(Icons.notifications_active),
+                    ),
+                  );
+                },
+              ),
               IconButton(
-                icon: const Icon(Icons.fact_check),
-                tooltip: 'Ready Orders',
-                onPressed: () => _showReadyOrdersSheet(context),
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context, '/', (route) => false),
+                tooltip: 'Logout',
               ),
             ],
           ),
@@ -308,7 +312,7 @@ class _PosScreenState extends State<PosScreen> {
                                   'price': product.price,
                                 }),
                                 child: Card(
-                                  elevation: 3,
+                                  color: Colors.white,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -328,7 +332,11 @@ class _PosScreenState extends State<PosScreen> {
                                       ),
                                       Text(
                                         product.category,
-                                        style: const TextStyle(fontSize: 11),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.secondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -342,7 +350,7 @@ class _PosScreenState extends State<PosScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
-                      color: Colors.green,
+                      color: AppTheme.primary,
                       child: Row(
                         children: [
                           Expanded(
@@ -353,8 +361,10 @@ class _PosScreenState extends State<PosScreen> {
                                   : () =>
                                       Navigator.pushNamed(context, '/checkout'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppTheme.accent,
+                                foregroundColor: AppTheme.textPrimary,
+                                disabledBackgroundColor:
+                                    AppTheme.accent.withOpacity(0.35),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                               ),
@@ -377,7 +387,19 @@ class _PosScreenState extends State<PosScreen> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              icon: const Icon(Icons.fact_check),
+                              icon: StreamBuilder(
+                                stream: _orderService.getOrders(),
+                                builder: (context, snapshot) {
+                                  final readyCount = _readyOrderCount(snapshot);
+
+                                  return Badge(
+                                    isLabelVisible: readyCount > 0,
+                                    label: Text('$readyCount'),
+                                    child:
+                                        const Icon(Icons.notifications_active),
+                                  );
+                                },
+                              ),
                               label: const Text('Ready Orders'),
                             ),
                           ),

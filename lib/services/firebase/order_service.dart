@@ -11,6 +11,8 @@ class OrderService {
     String? tableNumber,
     String? customerName,
     String paymentMethod = 'cash',
+    double tenderedAmount = 0.0,
+    double change = 0.0,
   }) async {
     // Sequential order number using transaction on dedicated counter collection
     final counterRef =
@@ -36,6 +38,8 @@ class OrderService {
       if (customerName != null && customerName.trim().isNotEmpty)
         'customerName': customerName.trim(),
       'paymentMethod': paymentMethod,
+      'tenderedAmount': tenderedAmount,
+      'change': change,
       'orderNumber': nextNumber,
       'createdAt': FieldValue.serverTimestamp(),
     });

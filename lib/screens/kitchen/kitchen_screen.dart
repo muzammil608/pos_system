@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/report_service.dart';
@@ -21,12 +22,12 @@ class _KitchenScreenState extends State<KitchenScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.softBackground,
       drawer: Drawer(
         child: ListView(
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.purple),
+              decoration: BoxDecoration(color: AppTheme.primary),
               child: Text(
                 'Kitchen Menu',
                 style: TextStyle(color: Colors.white, fontSize: 20),
@@ -61,7 +62,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
       ),
       appBar: AppBar(
         title: const Text("Kitchen Dashboard"),
-        backgroundColor: Colors.purple,
+        backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -81,7 +82,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.purple, Colors.purpleAccent],
+                colors: [AppTheme.primary, AppTheme.secondary],
               ),
             ),
             child: const SafeArea(
@@ -132,13 +133,13 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       return Row(
                         children: [
                           Expanded(
-                              child: buildMetricCard('Pending', Colors.red,
+                              child: buildMetricCard('Pending', AppTheme.danger,
                                   '${stats['pending']}')),
                           Expanded(
                               child: buildMetricCard(
-                                  'Ready', Colors.orange, '${stats['ready']}')),
+                                  'Ready', AppTheme.accent, '${stats['ready']}')),
                           Expanded(
-                              child: buildMetricCard('Completed', Colors.green,
+                              child: buildMetricCard('Completed', AppTheme.secondary,
                                   '${stats['completed']}')),
                         ],
                       );
@@ -233,7 +234,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                       'Payment: ${paymentMethod.toUpperCase()}'),
                                   Text(
                                     'Rs ${(data['total'] as num?)?.toStringAsFixed(0) ?? '0'}',
-                                    style: TextStyle(color: Colors.green[600]),
+                                    style: const TextStyle(color: AppTheme.primary),
                                   ),
                                   Text(
                                     'Time: ${_formatTime(createdTime)}',
@@ -300,7 +301,13 @@ class _KitchenScreenState extends State<KitchenScreen> {
           Text(value,
               style:
                   const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textPrimary.withOpacity(0.7),
+            ),
+          ),
         ],
       ),
     );
