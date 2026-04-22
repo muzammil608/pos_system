@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDh5dV2TjOIvPsfiv0gAwRVvqxHuASq0wA',
-    appId: '1:254975640262:android:1a30a29146779084614dc7',
+    appId: '1:254975640262:android:88e6dc2223a4a1a4614dc7',
     messagingSenderId: '254975640262',
     projectId: 'pos-muzamil-2026',
     storageBucket: 'pos-muzamil-2026.firebasestorage.app',

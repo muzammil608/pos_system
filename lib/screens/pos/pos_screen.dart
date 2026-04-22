@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/product_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/product_service.dart';
@@ -70,6 +72,15 @@ class _PosScreenState extends State<PosScreen> {
                         final data = doc.data() as Map<String, dynamic>;
                         return data['status'] == 'ready';
                       }).toList();
+                      readyOrders.sort((a, b) {
+                        final aData = a.data() as Map<String, dynamic>;
+                        final bData = b.data() as Map<String, dynamic>;
+                        final aCreatedAt = aData['createdAt'] as Timestamp?;
+                        final bCreatedAt = bData['createdAt'] as Timestamp?;
+                        final aMillis = aCreatedAt?.millisecondsSinceEpoch ?? 0;
+                        final bMillis = bCreatedAt?.millisecondsSinceEpoch ?? 0;
+                        return bMillis.compareTo(aMillis);
+                      });
 
                       if (readyOrders.isEmpty) {
                         return const Center(child: Text('No ready orders'));
@@ -189,7 +200,7 @@ class _PosScreenState extends State<PosScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                         child: Image.asset(
                           'assets/images/logo.png',
@@ -269,8 +280,18 @@ class _PosScreenState extends State<PosScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                    context, '/', (route) => false),
+                onPressed: () async {
+                  await Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  ).logout();
+                  if (!context.mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  );
+                },
                 tooltip: 'Logout',
               ),
             ],
@@ -288,6 +309,40 @@ class _PosScreenState extends State<PosScreen> {
                               ConnectionState.waiting) {
                             return const Center(
                               child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.cloud_off,
+                                      size: 40,
+                                      color: Colors.redAccent,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'Failed to load products',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${snapshot.error}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           }
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -364,7 +419,7 @@ class _PosScreenState extends State<PosScreen> {
                                 backgroundColor: AppTheme.accent,
                                 foregroundColor: AppTheme.textPrimary,
                                 disabledBackgroundColor:
-                                    AppTheme.accent.withOpacity(0.35),
+                                    AppTheme.accent.withValues(alpha: 0.35),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
                               ),

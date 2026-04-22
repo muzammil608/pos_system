@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pos_system"
+    namespace = "com.muzamil.possystem"
     compileSdk = flutter.compileSdkVersion
 
     ndkVersion = "27.0.12077973"

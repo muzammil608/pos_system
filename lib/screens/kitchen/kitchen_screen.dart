@@ -70,7 +70,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (!mounted) return;
+              if (!context.mounted) return;
               Navigator.pushReplacementNamed(context, '/');
             },
           ),
@@ -158,9 +158,11 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       }
 
                       if (snapshot.hasError) {
-                        return const Padding(
-                          padding: EdgeInsets.all(32),
-                          child: Center(child: Text('Error loading orders')),
+                        return Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Center(
+                            child: Text('Error loading orders\n${snapshot.error}'),
+                          ),
                         );
                       }
 
@@ -174,6 +176,15 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       final orders = snapshot.data!.docs
                           .where((order) => !_hiddenOrderIds.contains(order.id))
                           .toList();
+                      orders.sort((a, b) {
+                        final aData = a.data() as Map<String, dynamic>;
+                        final bData = b.data() as Map<String, dynamic>;
+                        final aCreatedAt = aData['createdAt'] as Timestamp?;
+                        final bCreatedAt = bData['createdAt'] as Timestamp?;
+                        final aMillis = aCreatedAt?.millisecondsSinceEpoch ?? 0;
+                        final bMillis = bCreatedAt?.millisecondsSinceEpoch ?? 0;
+                        return bMillis.compareTo(aMillis);
+                      });
                       _loadedOrderIds
                         ..clear()
                         ..addAll(snapshot.data!.docs.map((order) => order.id));
@@ -305,7 +316,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: AppTheme.textPrimary.withOpacity(0.7),
+              color: AppTheme.textPrimary.withValues(alpha: 0.7),
             ),
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:typed_data' show Uint8List;
 
 class StorageService {
@@ -15,7 +16,7 @@ class StorageService {
       final downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      print('Upload error: $e');
+      debugPrint('Upload error: $e');
       return null;
     }
   }

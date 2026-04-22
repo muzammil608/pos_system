@@ -11,7 +11,7 @@ import '../screens/cart/checkout_screen.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> routes = {
-    '/': (_) => LoginScreen(),
+    '/': (_) => const LoginScreen(),
     '/pos': (_) => const PosScreen(),
     '/checkout': (_) => const CheckoutScreen(),
     '/kitchen': (_) => KitchenScreen(),

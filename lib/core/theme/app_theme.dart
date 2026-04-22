@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primary = const Color(0xFF4B2E2B);
-  static const Color accent = const Color(0xFF85C085);
-  static const Color secondary = const Color(0xFF8C5A3C);
-  static const Color surface = const Color(0xFFF8F0C0);
-  static const Color textPrimary = const Color(0xFF1A1A1A);
-  static const Color softBackground = const Color(0xFFFFF8F0);
-  static const Color danger = const Color(0xFF4B2E2B);
+  static const Color primary = Color(0xFF4B2E2B);
+  static const Color accent = Color(0xFF85C085);
+  static const Color secondary = Color(0xFF8C5A3C);
+  static const Color surface = Color(0xFFF8F0C0);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color softBackground = Color(0xFFFFF8F0);
+  static const Color danger = Color(0xFF4B2E2B);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -33,7 +33,7 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: secondary.withOpacity(0.18)),
+        side: BorderSide(color: secondary.withValues(alpha: 0.18)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -41,11 +41,11 @@ class AppTheme {
       fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: secondary.withOpacity(0.25)),
+        borderSide: BorderSide(color: secondary.withValues(alpha: 0.25)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: secondary.withOpacity(0.25)),
+        borderSide: BorderSide(color: secondary.withValues(alpha: 0.25)),
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(14)),
@@ -74,7 +74,7 @@ class AppTheme {
       ),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: accent.withOpacity(0.18),
+      backgroundColor: accent.withValues(alpha: 0.18),
       selectedColor: accent,
       secondarySelectedColor: primary,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -18,7 +18,6 @@ class StatusDonutChart extends StatelessWidget {
             builder: (context, snapshot) {
               final stats =
                   snapshot.data ?? {'pending': 0, 'ready': 0, 'completed': 0};
-              final total = stats.values.fold<int>(0, (a, b) => a + b) + 3;
 
               List<PieChartSectionData> sections = [
                 PieChartSectionData(

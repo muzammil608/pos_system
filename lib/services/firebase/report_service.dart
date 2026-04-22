@@ -1,8 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ReportService {
-  final CollectionReference<Map<String, dynamic>> _orders =
-      FirebaseFirestore.instance.collection('orders');
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  String get _uid {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw StateError('User not authenticated');
+    }
+    return user.uid;
+  }
+
+  Query<Map<String, dynamic>> get _orders =>
+      _db.collection('users').doc(_uid).collection('orders');
 
   /// Daily sales: List of {date: '2024-10-15', total: 1250}
   Stream<List<Map<String, dynamic>>> getDailySales() {

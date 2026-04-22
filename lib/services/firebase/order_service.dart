@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'firestore_service.dart';
 
 class OrderService {
@@ -74,7 +75,7 @@ class OrderService {
   }
 
   Stream<QuerySnapshot> getOrders() {
-    return _firestore.orders.orderBy('createdAt', descending: true).snapshots();
+    return _firestore.orders.snapshots();
   }
 
   Future<void> updateStatus(String id, String status) async {

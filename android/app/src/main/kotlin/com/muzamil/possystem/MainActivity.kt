@@ -1,4 +1,4 @@
-package com.example.pos_system
+package com.muzamil.possystem
 
 import io.flutter.embedding.android.FlutterActivity
 

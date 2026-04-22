@@ -49,6 +49,8 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
         );
       }
 
+      if (!mounted) return;
+
       if (result != null) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(result)));
@@ -182,6 +184,38 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off,
+                            size: 40,
+                            color: Colors.redAccent,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Failed to load products',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${snapshot.error}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(child: Text('No products. Add some!'));

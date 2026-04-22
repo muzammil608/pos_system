@@ -14,9 +14,20 @@ class Product {
   });
 
   factory Product.fromMap(Map<String, dynamic> data, String id) {
-    String name = data['name']?.toString().trim() ?? 'Unknown';
-    double price = (data['price'] as num?)?.toDouble() ?? 0.0;
-    String category = data['category']?.toString().trim() ?? 'Other';
+    final rawName = data['name'] ?? data['productName'] ?? data['title'];
+    final rawPrice = data['price'] ?? data['unitPrice'] ?? data['amount'];
+    final rawCategory = data['category'] ?? data['type'];
+
+    final parsedName = rawName?.toString().trim() ?? '';
+    final parsedCategory = rawCategory?.toString().trim() ?? '';
+
+    final double? numericPrice = rawPrice is num
+        ? rawPrice.toDouble()
+        : double.tryParse(rawPrice?.toString() ?? '');
+
+    final String name = parsedName.isEmpty ? 'Unnamed Product' : parsedName;
+    final double price = numericPrice ?? 0.0;
+    final String category = parsedCategory.isEmpty ? 'Other' : parsedCategory;
 
     return Product(
       id: id,
