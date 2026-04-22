@@ -38,13 +38,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!context.mounted) return;
 
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      }
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/pos');
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(context, '/pos');
+    }
   }
 
   Future<void> _handleGoogleLogin() async {
@@ -54,13 +57,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!context.mounted) return;
 
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      }
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/pos');
+    if (context.mounted) {
+      Navigator.pushReplacementNamed(context, '/pos');
+    }
   }
 
   @override

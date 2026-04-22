@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'firestore_service.dart';
 
@@ -65,29 +66,38 @@ class AuthService {
   }
 
   Future<User?> signInWithGoogle() async {
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) {
-      return null;
+    UserCredential result;
+
+    if (kIsWeb) {
+      // Web: Use Firebase popup (reliable, no google_sign_in issues)
+      final provider = GoogleAuthProvider();
+      result = await _auth.signInWithPopup(provider);
+    } else {
+      // Mobile: Native Google picker
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return null;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      result = await _auth.signInWithCredential(credential);
     }
 
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    final result = await _auth.signInWithCredential(credential);
     final user = result.user;
-
     if (user != null) {
       await _syncUserToFirestore(user);
     }
-
     return user;
   }
 
   Future<void> logout() async {
-    await _googleSignIn.signOut();
+    if (!kIsWeb) {
+      await _googleSignIn.signOut();
+    }
     await _auth.signOut();
   }
 }

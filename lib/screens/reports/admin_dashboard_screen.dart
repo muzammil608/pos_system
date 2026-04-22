@@ -90,7 +90,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () => Navigator.pushNamed(context, '/tables'),
+                    onPressed: null,
                   ),
                 ),
               ],

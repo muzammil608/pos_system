@@ -196,15 +196,24 @@ class _PosScreenState extends State<PosScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 60,
-                        height: 60,
+                        width: 70,
+                        height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.cover,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(35),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -246,14 +255,6 @@ class _PosScreenState extends State<PosScreen> {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/kitchen');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.table_restaurant),
-                  title: const Text('Tables'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/tables');
                   },
                 ),
               ],

@@ -54,7 +54,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
               title: const Text('Tables'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/tables');
+                // Tables removed
               },
             ),
           ],
@@ -136,11 +136,11 @@ class _KitchenScreenState extends State<KitchenScreen> {
                               child: buildMetricCard('Pending', AppTheme.danger,
                                   '${stats['pending']}')),
                           Expanded(
-                              child: buildMetricCard(
-                                  'Ready', AppTheme.accent, '${stats['ready']}')),
+                              child: buildMetricCard('Ready', AppTheme.accent,
+                                  '${stats['ready']}')),
                           Expanded(
-                              child: buildMetricCard('Completed', AppTheme.secondary,
-                                  '${stats['completed']}')),
+                              child: buildMetricCard('Completed',
+                                  AppTheme.secondary, '${stats['completed']}')),
                         ],
                       );
                     },
@@ -161,7 +161,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
                         return Padding(
                           padding: const EdgeInsets.all(32),
                           child: Center(
-                            child: Text('Error loading orders\n${snapshot.error}'),
+                            child:
+                                Text('Error loading orders\n${snapshot.error}'),
                           ),
                         );
                       }
@@ -245,7 +246,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                       'Payment: ${paymentMethod.toUpperCase()}'),
                                   Text(
                                     'Rs ${(data['total'] as num?)?.toStringAsFixed(0) ?? '0'}',
-                                    style: const TextStyle(color: AppTheme.primary),
+                                    style: const TextStyle(
+                                        color: AppTheme.primary),
                                   ),
                                   Text(
                                     'Time: ${_formatTime(createdTime)}',
