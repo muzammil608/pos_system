@@ -313,37 +313,8 @@ class _PosScreenState extends State<PosScreen> {
                             );
                           }
                           if (snapshot.hasError) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.cloud_off,
-                                      size: 40,
-                                      color: Colors.redAccent,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'Failed to load products',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${snapshot.error}',
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            return const Center(
+                              child: Text('Error loading products'),
                             );
                           }
                           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -362,39 +333,47 @@ class _PosScreenState extends State<PosScreen> {
                             itemCount: products.length,
                             itemBuilder: (_, index) {
                               final product = products[index];
-                              return GestureDetector(
-                                onTap: () => cart.addItem({
-                                  'name': product.name,
-                                  'price': product.price,
-                                }),
-                                child: Card(
-                                  color: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          product.name,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                              return Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () {
+                                    print('TAP FIRED: ${product.id}');
+                                    cart.addItem({
+                                      'id': product.id,
+                                      ...product.toMap(),
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content:
+                                              Text('TAP: ${product.name}')),
+                                    );
+                                  },
+                                  child: Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(product.name,
+                                              style: const TextStyle(
+                                                  fontSize: 14)),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                              'Rs ${product.price.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                              'ID: ${product.id.substring(0, 6)}...',
+                                              style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.grey)),
+                                        ],
                                       ),
-                                      Text(
-                                        'Rs ${product.price.toStringAsFixed(0)}',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      Text(
-                                        product.category,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppTheme.secondary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -410,53 +389,63 @@ class _PosScreenState extends State<PosScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            flex: 2,
-                            child: ElevatedButton.icon(
-                              onPressed: cart.items.isEmpty
-                                  ? null
-                                  : () =>
-                                      Navigator.pushNamed(context, '/checkout'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accent,
-                                foregroundColor: AppTheme.textPrimary,
-                                disabledBackgroundColor:
-                                    AppTheme.accent.withValues(alpha: 0.35),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              icon: const Icon(Icons.shopping_cart),
-                              label: Text(
-                                'Proceed to Checkout (${cart.items.length} items)',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                            child: Badge(
+                              isLabelVisible: cart.items.isNotEmpty,
+                              label: Text('${cart.items.length}'),
+                              child: SizedBox(
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: cart.items.isEmpty
+                                      ? null
+                                      : () => Navigator.pushNamed(
+                                          context, '/checkout'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.accent,
+                                    foregroundColor: AppTheme.textPrimary,
+                                    disabledBackgroundColor:
+                                        AppTheme.accent.withValues(alpha: 0.35),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Proceed to Checkout',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _showReadyOrdersSheet(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white70),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                            child: SizedBox(
+                              height: 55,
+                              child: OutlinedButton(
+                                onPressed: () => _showReadyOrdersSheet(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white70),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: StreamBuilder(
+                                  stream: _orderService.getOrders(),
+                                  builder: (context, snapshot) {
+                                    final readyCount =
+                                        _readyOrderCount(snapshot);
+                                    return Text(
+                                      readyCount > 0
+                                          ? 'Ready Orders ($readyCount)'
+                                          : 'Ready Orders',
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                ),
                               ),
-                              icon: StreamBuilder(
-                                stream: _orderService.getOrders(),
-                                builder: (context, snapshot) {
-                                  final readyCount = _readyOrderCount(snapshot);
-
-                                  return Badge(
-                                    isLabelVisible: readyCount > 0,
-                                    label: Text('$readyCount'),
-                                    child:
-                                        const Icon(Icons.notifications_active),
-                                  );
-                                },
-                              ),
-                              label: const Text('Ready Orders'),
                             ),
                           ),
                         ],

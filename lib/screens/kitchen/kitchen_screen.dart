@@ -49,14 +49,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                 Navigator.pushNamed(context, '/admin');
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.table_restaurant),
-              title: const Text('Tables'),
-              onTap: () {
-                Navigator.pop(context);
-                // Tables removed
-              },
-            ),
+            // Tables ListTile removed
           ],
         ),
       ),

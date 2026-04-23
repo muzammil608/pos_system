@@ -27,13 +27,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     int index,
     Map<String, dynamic> item,
   ) async {
-    final qtyController = TextEditingController(
-      text: ((item['qty'] as num?)?.toInt() ?? 1).toString(),
-    );
-
-    await showDialog(
+    TextEditingController? qtyController;
+    await showDialog<bool?>(
       context: context,
       builder: (dialogContext) {
+        qtyController = TextEditingController(
+          text: ((item['qty'] as num?)?.toInt() ?? 1).toString(),
+        );
         return AlertDialog(
           title: Text('Edit ${item['name']}'),
           content: TextField(
@@ -47,23 +47,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
               child: const Text('Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
-                final newQty = int.tryParse(qtyController.text.trim());
+                final newQty = int.tryParse(qtyController!.text.trim());
                 if (newQty == null || newQty <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Enter a valid quantity greater than 0.'),
                     ),
                   );
+                  Navigator.pop(dialogContext, false);
                   return;
                 }
-
-                cart.updateItemQuantity(index, newQty);
-                Navigator.pop(dialogContext);
+                cart.updateItemQuantity(item['id'] ?? index.toString(), newQty);
+                Navigator.pop(dialogContext, true);
               },
               child: const Text('Save'),
             ),
@@ -71,8 +73,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       },
     );
-
-    qtyController.dispose();
+    qtyController?.dispose();
   }
 
   @override
@@ -182,7 +183,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 if (_paymentMethod == 'cash') ...[
                   const SizedBox(height: 12),
                   TextField(
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        TextInputType.numberWithOptions(decimal: true),
                     onChanged: (value) => setState(() {
                       _tenderedAmount = double.tryParse(value) ?? 0.0;
                     }),
@@ -238,8 +240,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     final price =
                         ((item['unitPrice'] ?? item['price']) as num?) ?? 0;
                     final qty = (item['qty'] as num?)?.toInt() ?? 1;
-                    final lineTotal = ((item['lineTotal']) as num?)?.toDouble() ??
-                        (price.toDouble() * qty);
+                    final lineTotal =
+                        ((item['lineTotal']) as num?)?.toDouble() ??
+                            (price.toDouble() * qty);
 
                     return Card(
                       child: ListTile(
@@ -270,7 +273,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 Icons.delete,
                                 color: AppTheme.danger,
                               ),
-                              onPressed: () => cart.removeItem(i),
+                              onPressed: () =>
+                                  cart.removeItem(item['id'] ?? i.toString()),
                             ),
                           ],
                         ),

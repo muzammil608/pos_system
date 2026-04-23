@@ -41,7 +41,8 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> register(String email, String password, {String? name}) async {
+  Future<String?> register(String email, String password,
+      {String? name}) async {
     isLoading = true;
     notifyListeners();
 

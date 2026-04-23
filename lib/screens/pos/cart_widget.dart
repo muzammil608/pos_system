@@ -18,18 +18,26 @@ class CartWidget extends StatelessWidget {
               final item = cart.items[i];
 
               return ListTile(
-                title: Text(item['name']),
-                subtitle: Text("Rs ${item['price']}"),
+                title: Text(item['name'].toString()),
+                subtitle: Text("Rs ${item['unitPrice'] ?? item['price']}"),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () => cart.removeItem(i),
+                  onPressed: () {
+                    final id = item['id']; // IMPORTANT FIX
+                    if (id != null) {
+                      cart.removeItem(id);
+                    }
+                  },
                 ),
               );
             },
           ),
         ),
         const Divider(),
-        Text("Total: Rs ${cart.total}", style: const TextStyle(fontSize: 18)),
+        Text(
+          "Total: Rs ${cart.total.toStringAsFixed(0)}",
+          style: const TextStyle(fontSize: 18),
+        ),
       ],
     );
   }

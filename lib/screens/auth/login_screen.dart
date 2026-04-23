@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/cart_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  bool _navigated = false; // ✅ Good flag
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -21,11 +24,22 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _goToPos() {
+    if (_navigated) return;
+    _navigated = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/pos');
+    });
+  }
+
   Future<void> _handleEmailLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email and password are required.')),
       );
@@ -35,57 +49,52 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final error = await auth.login(email, password);
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (error != null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error)));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
       return;
     }
 
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/pos');
-    }
+    Provider.of<CartProvider>(context, listen: false).clear();
+    _goToPos();
   }
 
   Future<void> _handleGoogleLogin() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final error = await auth.signInWithGoogle();
 
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     if (error != null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error)));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
       return;
     }
 
-    if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/pos');
-    }
+    Provider.of<CartProvider>(context, listen: false).clear();
+    _goToPos();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SizedBox(
-          width: 320,
-          child: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              if (auth.user != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/pos');
-                  }
-                });
-              }
+      body: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          // ✅ FIXED: Check ONCE, not in every build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (auth.user != null && !_navigated && mounted) {
+              _goToPos();
+            }
+          });
 
-              return Column(
+          return Center(
+            child: SizedBox(
+              width: 320,
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text("Login", style: TextStyle(fontSize: 24)),
@@ -125,10 +134,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ],
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/auth_provider.dart';
-
 import 'providers/product_provider.dart';
 
 import 'routes/app_routes.dart';
@@ -20,7 +19,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -30,9 +29,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // ✅ Auth FIRST (important for dependent providers)
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
       ],
       child: MaterialApp(

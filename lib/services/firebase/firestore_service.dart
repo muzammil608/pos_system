@@ -12,6 +12,9 @@ class FirestoreService {
     return user.uid;
   }
 
+  CollectionReference<Map<String, dynamic>> get globalProducts =>
+      _db.collection('products');
+
   CollectionReference<Map<String, dynamic>> get products =>
       _db.collection('users').doc(_uid).collection('products');
 
