@@ -61,10 +61,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (!context.mounted) return;
-              Navigator.pushReplacementNamed(context, '/');
+            onPressed: () {
+              Provider.of<AuthProvider>(context, listen: false).logout();
             },
           ),
         ],

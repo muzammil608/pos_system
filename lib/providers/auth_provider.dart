@@ -13,6 +13,7 @@ class AuthProvider with ChangeNotifier {
   bool isLoading = false;
 
   AuthProvider() {
+    _authService.ensurePersistence(); // Fire and forget - persistence
     user = _authService.currentUser;
     _authSub = _authService.authStateChanges.listen((updatedUser) {
       user = updatedUser;
@@ -34,6 +35,13 @@ class AuthProvider with ChangeNotifier {
       await _authService.login(email, password);
       return null;
     } catch (e) {
+      if (e is FirebaseAuthException &&
+          (e.code == 'user-not-found' ||
+              e.code == 'wrong-password' ||
+              e.code == 'invalid-email' ||
+              e.code == 'invalid-credential')) {
+        return 'invalid email or not registered';
+      }
       return e.toString();
     } finally {
       isLoading = false;

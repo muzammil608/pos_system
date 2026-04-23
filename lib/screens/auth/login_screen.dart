@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _navigated = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -36,6 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleEmailLogin() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
     final error = await auth.login(
@@ -46,6 +51,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (error == null) {
       Provider.of<CartProvider>(context, listen: false).clear();
       _goToPos();
+    } else {
+      if (mounted) {
+        setState(() {
+          _errorMessage = error!;
+        });
+      }
     }
   }
 
@@ -151,7 +162,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                               .primary),
                                     ),
                                   ),
-
+                                  if (_errorMessage != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8.0),
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
                                   const SizedBox(height: 18),
 
                                   SizedBox(
@@ -232,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Column(
                               children: [
                                 Text(
-                                  "ORION SOLUTION PAKISTAN",
+                                  "Software By Orion Solutions",
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,

@@ -213,8 +213,17 @@ class _PosScreenState extends State<PosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CartProvider>(
-      builder: (context, cart, child) {
+    return Consumer2<AuthProvider, CartProvider>(
+      builder: (context, auth, cart, child) {
+        if (auth.user == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context)
+                .pushNamedAndRemoveUntil('/', (route) => false);
+          });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
         return Scaffold(
           drawer: Drawer(
             child: ListView(
@@ -313,17 +322,11 @@ class _PosScreenState extends State<PosScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () async {
-                  await Provider.of<AuthProvider>(
+                onPressed: () {
+                  Provider.of<AuthProvider>(
                     context,
                     listen: false,
                   ).logout();
-                  if (!context.mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/',
-                    (route) => false,
-                  );
                 },
                 tooltip: 'Logout',
               ),

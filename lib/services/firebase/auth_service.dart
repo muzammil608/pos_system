@@ -1,14 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 import 'firestore_service.dart';
 
 class AuthService {
+  static bool _persistenceInitialized = false;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirestoreService _firestore = FirestoreService();
+
+  /// Ensure auth persistence is set once (LOCAL persistence survives app kill/restart)
+  Future<void> ensurePersistence() async {
+    if (_persistenceInitialized) return;
+    try {
+      await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+      _persistenceInitialized = true;
+    } catch (e) {
+      if (kDebugMode) print('Auth persistence set failed (already set?): $e');
+    }
+  }
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
@@ -34,6 +47,7 @@ class AuthService {
   }
 
   Future<User?> login(String email, String password) async {
+    await ensurePersistence(); // Ensure persistence before login
     final result = await _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
@@ -47,6 +61,7 @@ class AuthService {
   }
 
   Future<User?> register(String email, String password, {String? name}) async {
+    await ensurePersistence();
     final result = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
@@ -66,14 +81,13 @@ class AuthService {
   }
 
   Future<User?> signInWithGoogle() async {
+    await ensurePersistence();
     UserCredential result;
 
     if (kIsWeb) {
-      // Web: Use Firebase popup (reliable, no google_sign_in issues)
       final provider = GoogleAuthProvider();
       result = await _auth.signInWithPopup(provider);
     } else {
-      // Mobile: Native Google picker
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return null;
