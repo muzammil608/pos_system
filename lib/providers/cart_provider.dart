@@ -12,14 +12,17 @@ class CartProvider with ChangeNotifier {
 
   double get total => _items.fold(
         0.0,
-        (sum, item) => sum + ((item['lineTotal'] as num?)?.toDouble() ?? 0.0),
+        (sum, item) {
+          final qty = (item['qty'] as num?)?.toDouble() ?? 1.0;
+          final price = (item['price'] as num?)?.toDouble() ?? 0.0;
+          return sum + (qty * price);
+        },
       );
 
   CartProvider() {
     _initAuthListener();
   }
 
-  // ✅ FIX: listen to auth changes properly
   void _initAuthListener() {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       _items = [];
@@ -38,91 +41,110 @@ class CartProvider with ChangeNotifier {
         .collection('carts')
         .doc(_userId)
         .collection('items')
-        .orderBy('addedAt')
         .snapshots()
         .listen((snapshot) {
       final newItems = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
           ...data,
-          'id': doc.id,
+          'cartDocId': doc.id, // ✅ Use different field name
         };
       }).toList();
 
       _items = newItems;
-
       notifyListeners();
     });
   }
 
-  Future<void> addItem(
-    Map<String, dynamic> product, {
-    int qty = 1,
-  }) async {
+  // ✅ SIMPLIFIED & FIXED - Uses random ID for each add
+  Future<void> addItem(Map<String, dynamic> product) async {
     if (_userId.isEmpty) return;
 
-    final price = (product['price'] as num).toDouble();
+    try {
+      final qty = product['qty'] as int? ?? 1;
+      final name = product['name'] as String? ?? 'Unknown';
+      final price = (product['price'] as num?)?.toDouble() ?? 0.0;
 
-    final itemData = {
-      ...product,
-      'qty': qty,
-      'unitPrice': price,
-      'lineTotal': price * qty,
-      'addedAt': FieldValue.serverTimestamp(),
-    };
+      // ✅ Use random ID for each cart item (no conflicts)
+      final cartItemId = _firestore.collection('temp').doc().id;
 
-    await _firestore
-        .collection('carts')
-        .doc(_userId)
-        .collection('items')
-        .doc(product['id'])
-        .set(itemData, SetOptions(merge: true));
+      final docRef = _firestore
+          .collection('carts')
+          .doc(_userId)
+          .collection('items')
+          .doc(cartItemId);
+
+      await docRef.set({
+        'productId': product['id'] ?? cartItemId,
+        'name': name,
+        'price': price,
+        'qty': qty,
+        'lineTotal': price * qty,
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('✅ Added to cart: $name x$qty');
+    } catch (e) {
+      debugPrint('❌ Cart error: $e');
+    }
   }
 
-  Future<void> removeItem(String itemId) async {
+  Future<void> removeItem(String cartDocId) async {
     if (_userId.isEmpty) return;
 
-    await _firestore
-        .collection('carts')
-        .doc(_userId)
-        .collection('items')
-        .doc(itemId)
-        .delete();
+    try {
+      await _firestore
+          .collection('carts')
+          .doc(_userId)
+          .collection('items')
+          .doc(cartDocId)
+          .delete();
+    } catch (e) {
+      debugPrint('Remove error: $e');
+    }
   }
 
-  Future<void> updateItemQuantity(String itemId, int qty) async {
+  Future<void> updateItemQuantity(String cartDocId, int qty) async {
     if (_userId.isEmpty || qty <= 0) return;
 
-    final docRef = _firestore
-        .collection('carts')
-        .doc(_userId)
-        .collection('items')
-        .doc(itemId);
+    try {
+      final docRef = _firestore
+          .collection('carts')
+          .doc(_userId)
+          .collection('items')
+          .doc(cartDocId);
 
-    final snapshot = await docRef.get();
-    final data = snapshot.data();
+      final snapshot = await docRef.get();
+      final data = snapshot.data();
 
-    if (data == null) return;
+      if (data == null) return;
 
-    final unitPrice = (data['unitPrice'] as num?)?.toDouble() ?? 0.0;
+      final price = (data['price'] as num?)?.toDouble() ?? 0.0;
 
-    await docRef.update({
-      'qty': qty,
-      'lineTotal': unitPrice * qty,
-    });
+      await docRef.update({
+        'qty': qty,
+        'lineTotal': price * qty,
+      });
+    } catch (e) {
+      debugPrint('Update qty error: $e');
+    }
   }
 
   Future<void> clear() async {
     if (_userId.isEmpty) return;
 
-    final snapshot = await _firestore
-        .collection('carts')
-        .doc(_userId)
-        .collection('items')
-        .get();
+    try {
+      final snapshot = await _firestore
+          .collection('carts')
+          .doc(_userId)
+          .collection('items')
+          .get();
 
-    for (var doc in snapshot.docs) {
-      await doc.reference.delete();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      debugPrint('Clear cart error: $e');
     }
   }
 

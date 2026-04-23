@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
+import '../../services/firebase/product_service.dart';
+import 'product_list_bottom_sheet.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -20,6 +22,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String _paymentMethod = 'cash';
   double _tenderedAmount = 0.0;
   bool _isSubmitting = false;
+  late FocusNode _cashFocus = FocusNode();
 
   Future<void> _showEditItemDialog(
     BuildContext context,
@@ -74,6 +77,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       },
     );
     qtyController?.dispose();
+  }
+
+  @override
+  void dispose() {
+    _cashFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -183,6 +192,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 if (_paymentMethod == 'cash') ...[
                   const SizedBox(height: 12),
                   TextField(
+                    focusNode: _cashFocus,
                     keyboardType:
                         TextInputType.numberWithOptions(decimal: true),
                     onChanged: (value) => setState(() {
@@ -194,6 +204,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       prefixText: 'Rs ',
                     ),
                   ),
+                  if (_paymentMethod == 'cash' &&
+                      _cashFocus.hasFocus &&
+                      _tenderedAmount < cart.total)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 4.0),
+                      child: Text(
+                        'Please! Enter Full Amount',
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -256,6 +280,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         trailing: Wrap(
                           spacing: 4,
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.add,
+                                  color: AppTheme.primary),
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) =>
+                                      const ProductListBottomSheet(),
+                                );
+                              },
+                            ),
                             IconButton(
                               icon: const Icon(
                                 Icons.edit,
@@ -330,7 +367,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: cart.items.isEmpty || _isSubmitting
+                          onPressed: cart.items.isEmpty ||
+                                  (_paymentMethod == 'cash' &&
+                                      _tenderedAmount < cart.total) ||
+                                  _isSubmitting
                               ? null
                               : () async {
                                   if (_orderType == 'dine_in' &&
@@ -342,18 +382,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                             'Please select a table for dine in orders.'),
                                       ),
                                     );
-                                    return;
-                                  }
-
-                                  if (_paymentMethod == 'cash' &&
-                                      _tenderedAmount < cart.total) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Tendered amount must be >= total'),
-                                      ),
-                                    );
-                                    setState(() => _isSubmitting = false);
                                     return;
                                   }
 
@@ -383,12 +411,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                                     if (!context.mounted) return;
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('✅ Order placed!'),
-                                      ),
-                                    );
-
                                     cart.clear();
 
                                     Navigator.pushNamedAndRemoveUntil(
@@ -396,8 +418,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   } catch (e) {
                                     if (!context.mounted) return;
 
+                                    final errorMsg = e
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains('network') ||
+                                            e
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains('internet') ||
+                                            e
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains('connect') ||
+                                            e
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains('timeout') ||
+                                            e
+                                                .toString()
+                                                .toLowerCase()
+                                                .contains('unavailable')
+                                        ? 'No internet connection. Please check your connection and try again.'
+                                        : 'Error: $e';
+
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: $e')),
+                                      SnackBar(content: Text(errorMsg)),
                                     );
                                   } finally {
                                     if (mounted) {

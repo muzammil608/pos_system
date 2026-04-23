@@ -21,6 +21,37 @@ class _PosScreenState extends State<PosScreen> {
   final ProductService _productService = ProductService();
   final OrderService _orderService = OrderService();
 
+  Future<int?> _showQtyDialog(BuildContext context, String productName) async {
+    int qty = 1;
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Select Qty for $productName'),
+        content: TextField(
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          onChanged: (value) {
+            qty = int.tryParse(value) ?? 1;
+          },
+          decoration: const InputDecoration(
+            labelText: 'Quantity',
+            hintText: '1',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, qty),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   int _readyOrderCount(AsyncSnapshot snapshot) {
     if (!snapshot.hasData) return 0;
 
@@ -103,7 +134,8 @@ class _PosScreenState extends State<PosScreen> {
                               'Order #${data['orderNumber'] ?? orderId.substring(0, 6)}';
                           final items = List<Map<String, dynamic>>.from(
                             (data['items'] as List? ?? []).map(
-                              (item) => Map<String, dynamic>.from(item as Map),
+                              (item) => Map<String, dynamic>.from(
+                                  item as Map), // ✅ FIXED
                             ),
                           );
 
@@ -326,9 +358,10 @@ class _PosScreenState extends State<PosScreen> {
                             padding: const EdgeInsets.all(10),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.75,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
                             ),
                             itemCount: products.length,
                             itemBuilder: (_, index) {
@@ -337,40 +370,42 @@ class _PosScreenState extends State<PosScreen> {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(8),
-                                  onTap: () {
-                                    print('TAP FIRED: ${product.id}');
-                                    cart.addItem({
-                                      'id': product.id,
-                                      ...product.toMap(),
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content:
-                                              Text('TAP: ${product.name}')),
-                                    );
+                                  onTap: () async {
+                                    final qty = await _showQtyDialog(
+                                        context, product.name);
+                                    if (qty != null && qty > 0) {
+                                      final productMap = product.toMap();
+                                      productMap['qty'] = qty;
+                                      await cart.addItem(productMap);
+                                      // ✅ REMOVED SUCCESS POPUP
+                                    }
                                   },
                                   child: Card(
                                     child: Padding(
                                       padding: const EdgeInsets.all(12),
                                       child: Column(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                            MainAxisAlignment.spaceEvenly,
                                         children: [
-                                          Text(product.name,
-                                              style: const TextStyle(
-                                                  fontSize: 14)),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                              'Rs ${product.price.toStringAsFixed(0)}',
+                                          Expanded(
+                                            child: Text(
+                                              product.name,
                                               style: const TextStyle(
                                                   fontSize: 16,
-                                                  fontWeight: FontWeight.bold)),
-                                          const SizedBox(height: 2),
+                                                  fontWeight: FontWeight.bold),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
                                           Text(
-                                              'ID: ${product.id.substring(0, 6)}...',
-                                              style: const TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.grey)),
+                                            'Rs ${product.price.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green),
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ],
                                       ),
                                     ),
