@@ -18,7 +18,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _navigated = false;
-  AuthLoginResult? _loginResult;
+  bool _isLoading = false;
+
+  String? _emailError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -38,339 +41,347 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleEmailLogin() async {
-    // Clear previous errors
     setState(() {
-      _loginResult = null;
+      _emailError = null;
+      _passwordError = null;
+      _isLoading = true;
     });
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    final result = await auth.login(
+    final AuthLoginResult? result = await auth.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
 
     if (!mounted) return;
 
+    if (result == null) {
+      Provider.of<CartProvider>(context, listen: false).clear();
+      _goToPos();
+    } else {
+      setState(() {
+        _emailError = result.emailError;
+        _passwordError = result.passwordError;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
     setState(() {
-      _loginResult = result;
+      _emailError = null;
+      _passwordError = null;
+      _isLoading = true;
     });
 
-    if (result == null) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final String? error = await auth.signInWithGoogle();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: const Color(0xFFD32F2F),
+        ),
+      );
+    } else {
       Provider.of<CartProvider>(context, listen: false).clear();
       _goToPos();
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final error = await auth.signInWithGoogle();
+  Widget _buildField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required String? errorText,
+    required void Function(String) onChanged,
+    bool obscure = false,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    const errorColor = Color(0xFFD32F2F);
+    const activeColor = Color(0xFF1976D2);
+    const outlineColor = Color(0xFFBDBDBD);
 
-    if (!mounted) return;
+    final bool isEmptyFieldError =
+        errorText == "Please fill out required field!";
 
-    setState(() {
-      _loginResult = null; // Clear email/password errors on Google attempt
-      if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
-      }
-    });
+    final bool showErrorBelow = errorText != null && !isEmptyFieldError;
+    final bool hasError = errorText != null;
 
-    if (error == null) {
-      Provider.of<CartProvider>(context, listen: false).clear();
-      _goToPos();
-    }
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      keyboardType: keyboardType,
+      onChanged: onChanged,
+      style: const TextStyle(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: isEmptyFieldError ? errorText : hint,
+        hintStyle: TextStyle(
+          color: isEmptyFieldError ? errorColor : Colors.grey,
+          fontSize: 14,
+          fontWeight: isEmptyFieldError ? FontWeight.w500 : FontWeight.normal,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: hasError ? errorColor : activeColor,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        errorText: showErrorBelow ? errorText : null,
+        errorStyle: const TextStyle(
+          color: errorColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: hasError ? errorColor : outlineColor,
+            width: hasError ? 1.5 : 1.0,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: hasError ? errorColor : activeColor,
+            width: 2.0,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: errorColor,
+            width: 1.5,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: errorColor,
+            width: 2.0,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.primary,
-                  AppTheme.secondary,
-                  AppTheme.accent,
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: c.maxHeight),
-                      child: IntrinsicHeight(
-                        child: Column(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primary,
+              AppTheme.secondary,
+              AppTheme.accent,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, c) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: c.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 30),
+                        Icon(
+                          Icons.account_circle_rounded,
+                          size: 70,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "POS SYSTEM",
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 18),
+                          padding: const EdgeInsets.all(22),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.12),
+                                blurRadius: 25,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildField(
+                                controller: _emailController,
+                                hint: "Email",
+                                icon: Icons.email_outlined,
+                                errorText: _emailError,
+                                keyboardType: TextInputType.emailAddress,
+                                onChanged: (_) {
+                                  if (_emailError != null) {
+                                    setState(() {
+                                      _emailError = null;
+                                    });
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              _buildField(
+                                controller: _passwordController,
+                                hint: "Password",
+                                icon: Icons.lock_outline,
+                                errorText: _passwordError,
+                                obscure: true,
+                                onChanged: (_) {
+                                  if (_passwordError != null) {
+                                    setState(() {
+                                      _passwordError = null;
+                                    });
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 18),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton(
+                                  onPressed:
+                                      _isLoading ? null : _handleEmailLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                          ),
+                                        )
+                                      : const Text(
+                                          "LOGIN",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: const [
+                                  Expanded(child: Divider()),
+                                  Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text("OR"),
+                                  ),
+                                  Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              IconButton(
+                                onPressed:
+                                    _isLoading ? null : _handleGoogleLogin,
+                                style: IconButton.styleFrom(
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.surface,
+                                  padding: const EdgeInsets.all(12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: Image.asset(
+                                  'assets/images/google_logo.png',
+                                  height: 28,
+                                  width: 28,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 30),
-
-                            Icon(
-                              Icons.account_circle_rounded,
-                              size: 70,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-
-                            const SizedBox(height: 12),
-
                             Text(
-                              "POS SYSTEM",
+                              "New here? ",
                               style: TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w800,
-                                color: Theme.of(context).colorScheme.onPrimary,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimary
+                                    .withValues(alpha: 0.8),
                               ),
                             ),
-
-                            const SizedBox(height: 30),
-
-                            // CARD
-                            Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 18),
-                              padding: const EdgeInsets.all(22),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface,
-                                borderRadius: BorderRadius.circular(28),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.12),
-                                    blurRadius: 25,
-                                    offset: const Offset(0, 12),
-                                  ),
-                                ],
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(context, '/signup');
+                              },
+                              child: Text(
+                                "Create account",
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // EMAIL FIELD - UPDATED ✅
-                                  TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    onChanged: (_) =>
-                                        setState(() => _loginResult = null),
-                                    decoration: InputDecoration(
-                                      hintText: "Email",
-                                      prefixIcon: Icon(
-                                        Icons.email_outlined,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                      // ✅ Shows "invalid email or not registered"
-                                      errorText: _loginResult?.emailError,
-                                      errorStyle: TextStyle(
-                                        color: Colors.red[400],
-                                        fontSize: 13,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter email';
-                                      }
-                                      if (!value.contains('@')) {
-                                        return 'Please enter valid email';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 14),
-
-                                  // PASSWORD FIELD - UPDATED ✅
-                                  TextFormField(
-                                    controller: _passwordController,
-                                    obscureText: true,
-                                    onChanged: (_) =>
-                                        setState(() => _loginResult = null),
-                                    decoration: InputDecoration(
-                                      hintText: "Password",
-                                      prefixIcon: Icon(
-                                        Icons.lock_outline,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                      // ✅ Shows same custom error
-                                      errorText: _loginResult?.emailError,
-                                      errorStyle: TextStyle(
-                                        color: Colors.red[400],
-                                        fontSize: 13,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter password';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 18),
-
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      onPressed: auth.isLoading
-                                          ? null
-                                          : _handleEmailLogin,
-                                      style: ElevatedButton.styleFrom(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      child: auth.isLoading
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                        Color>(
-                                                  Colors.white,
-                                                ),
-                                              ),
-                                            )
-                                          : const Text(
-                                              "LOGIN",
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // -------- OR DIVIDER --------
-                                  Row(
-                                    children: const [
-                                      Expanded(child: Divider()),
-                                      Padding(
-                                        padding:
-                                            EdgeInsets.symmetric(horizontal: 8),
-                                        child: Text("OR"),
-                                      ),
-                                      Expanded(child: Divider()),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  IconButton(
-                                    onPressed: auth.isLoading
-                                        ? null
-                                        : _handleGoogleLogin,
-                                    style: IconButton.styleFrom(
-                                      backgroundColor:
-                                          Theme.of(context).colorScheme.surface,
-                                      padding: const EdgeInsets.all(12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    icon: Image.asset(
-                                      'assets/images/google_logo.png',
-                                      height: 28,
-                                      width: 28,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "New here? ",
-                                  style: TextStyle(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimary
-                                        .withOpacity(0.8),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, '/signup'),
-                                  child: Text(
-                                    "Create account",
-                                    style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const Spacer(),
-
-                            // -------- BOTTOM TEXT ONLY --------
-                            const Column(
-                              children: [
-                                Text(
-                                  "Software By Orion Solutions",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                SizedBox(height: 20),
-                              ],
                             ),
                           ],
                         ),
-                      ),
+                        const Spacer(),
+                        const Column(
+                          children: [
+                            Text(
+                              "Software By Orion Solutions",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            SizedBox(height: 20),
+                          ],
+                        ),
+                      ],
                     ),
-                  );
-                },
-              ),
-            ),
-          );
-        },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

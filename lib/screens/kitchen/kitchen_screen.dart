@@ -16,6 +16,7 @@ class KitchenScreen extends StatefulWidget {
 class _KitchenScreenState extends State<KitchenScreen> {
   final OrderService _service = OrderService();
   final ReportService _reportService = ReportService();
+
   final Set<String> _hiddenOrderIds = <String>{};
   final Set<String> _loadedOrderIds = <String>{};
 
@@ -49,7 +50,6 @@ class _KitchenScreenState extends State<KitchenScreen> {
                 Navigator.pushNamed(context, '/admin');
               },
             ),
-            // Tables ListTile removed
           ],
         ),
       ),
@@ -69,7 +69,6 @@ class _KitchenScreenState extends State<KitchenScreen> {
       ),
       body: Column(
         children: [
-          // HEADER
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -84,8 +83,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
                     Icon(Icons.restaurant_menu, color: Colors.white, size: 32),
                     SizedBox(width: 12),
                     Column(
-                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'Kitchen Orders',
@@ -106,13 +105,10 @@ class _KitchenScreenState extends State<KitchenScreen> {
               ),
             ),
           ),
-
-          // MAIN CONTENT
           Expanded(
             child: ListView(
               padding: const EdgeInsets.only(bottom: 120),
               children: [
-                // METRICS
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: StreamBuilder<Map<String, int>>(
@@ -124,21 +120,22 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       return Row(
                         children: [
                           Expanded(
-                              child: buildMetricCard('Pending', AppTheme.danger,
-                                  '${stats['pending']}')),
+                            child: buildMetricCard('Pending', AppTheme.danger,
+                                '${stats['pending']}'),
+                          ),
                           Expanded(
-                              child: buildMetricCard('Ready', AppTheme.accent,
-                                  '${stats['ready']}')),
+                            child: buildMetricCard(
+                                'Ready', AppTheme.accent, '${stats['ready']}'),
+                          ),
                           Expanded(
-                              child: buildMetricCard('Completed',
-                                  AppTheme.secondary, '${stats['completed']}')),
+                            child: buildMetricCard('Completed',
+                                AppTheme.secondary, '${stats['completed']}'),
+                          ),
                         ],
                       );
                     },
                   ),
                 ),
-
-                // ORDERS LIST
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: StreamBuilder(
@@ -166,27 +163,29 @@ class _KitchenScreenState extends State<KitchenScreen> {
                       }
 
                       final orders = snapshot.data!.docs
-                          .where((order) => !_hiddenOrderIds.contains(order.id))
+                          .where((o) => !_hiddenOrderIds.contains(o.id))
                           .toList();
+
                       orders.sort((a, b) {
                         final aData = a.data() as Map<String, dynamic>;
                         final bData = b.data() as Map<String, dynamic>;
-                        final aCreatedAt = aData['createdAt'] as Timestamp?;
-                        final bCreatedAt = bData['createdAt'] as Timestamp?;
-                        final aMillis = aCreatedAt?.millisecondsSinceEpoch ?? 0;
-                        final bMillis = bCreatedAt?.millisecondsSinceEpoch ?? 0;
-                        return bMillis.compareTo(aMillis);
+                        final aTime = (aData['createdAt'] as Timestamp?)
+                                ?.millisecondsSinceEpoch ??
+                            0;
+                        final bTime = (bData['createdAt'] as Timestamp?)
+                                ?.millisecondsSinceEpoch ??
+                            0;
+                        return bTime.compareTo(aTime);
                       });
+
                       _loadedOrderIds
                         ..clear()
-                        ..addAll(snapshot.data!.docs.map((order) => order.id));
+                        ..addAll(snapshot.data!.docs.map((e) => e.id));
 
                       if (orders.isEmpty) {
                         return const Padding(
                           padding: EdgeInsets.all(32),
-                          child: Center(
-                            child: Text('No visible orders'),
-                          ),
+                          child: Center(child: Text('No visible orders')),
                         );
                       }
 
@@ -194,16 +193,15 @@ class _KitchenScreenState extends State<KitchenScreen> {
                         children: orders.map((order) {
                           final data = order.data() as Map<String, dynamic>;
                           final id = order.id;
-                          final status =
-                              data['status']?.toString() ?? 'unknown';
+                          final status = data['status'] ?? 'unknown';
+
                           final createdAt = data['createdAt'] as Timestamp?;
                           final createdTime = createdAt?.toDate();
+
                           final customerName =
                               data['customerName']?.toString().trim();
-                          final paymentMethod =
-                              data['paymentMethod']?.toString() ?? 'cash';
-                          final orderType =
-                              data['orderType']?.toString() ?? 'takeaway';
+                          final paymentMethod = data['paymentMethod'] ?? 'cash';
+                          final orderType = data['orderType'] ?? 'takeaway';
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
@@ -215,7 +213,6 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                     fontWeight: FontWeight.bold, fontSize: 18),
                               ),
                               subtitle: Column(
-                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
@@ -224,15 +221,15 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                       data['items'].isNotEmpty)
                                     Text(
                                       '${data['items'][0]['name']} (${data['items'].length} items)',
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.bold),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   if (customerName != null &&
                                       customerName.isNotEmpty)
                                     Text('Customer: $customerName'),
                                   Text(
-                                      'Type: ${orderType.replaceAll('_', ' ')}'),
+                                      'Type: ${orderType.toString().replaceAll('_', ' ')}'),
                                   Text(
                                       'Payment: ${paymentMethod.toUpperCase()}'),
                                   Text(
@@ -240,9 +237,7 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                     style: const TextStyle(
                                         color: AppTheme.primary),
                                   ),
-                                  Text(
-                                    'Time: ${_formatTime(createdTime)}',
-                                  ),
+                                  Text('Time: ${_formatTime(createdTime)}'),
                                 ],
                               ),
                               trailing: SizedBox(
@@ -298,20 +293,16 @@ class _KitchenScreenState extends State<KitchenScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.circle, color: color),
           const SizedBox(height: 8),
           Text(value,
               style:
                   const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textPrimary.withValues(alpha: 0.7),
-            ),
-          ),
+          Text(title,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textPrimary.withValues(alpha: 0.7))),
         ],
       ),
     );
@@ -320,9 +311,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
   String _formatTime(DateTime? dateTime) {
     if (dateTime == null) return '--:--:--';
 
-    final hour = dateTime.hour.toString().padLeft(2, '0');
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    final second = dateTime.second.toString().padLeft(2, '0');
-    return '$hour:$minute:$second';
+    return '${dateTime.hour.toString().padLeft(2, '0')}:'
+        '${dateTime.minute.toString().padLeft(2, '0')}:'
+        '${dateTime.second.toString().padLeft(2, '0')}';
   }
 }

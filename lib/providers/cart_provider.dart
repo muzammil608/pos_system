@@ -47,7 +47,7 @@ class CartProvider with ChangeNotifier {
         final data = doc.data();
         return {
           ...data,
-          'cartDocId': doc.id, // ✅ Use different field name
+          'cartDocId': doc.id,
         };
       }).toList();
 
@@ -56,7 +56,6 @@ class CartProvider with ChangeNotifier {
     });
   }
 
-  // ✅ SIMPLIFIED & FIXED - Uses random ID for each add
   Future<void> addItem(Map<String, dynamic> product) async {
     if (_userId.isEmpty) return;
 
@@ -65,7 +64,6 @@ class CartProvider with ChangeNotifier {
       final name = product['name'] as String? ?? 'Unknown';
       final price = (product['price'] as num?)?.toDouble() ?? 0.0;
 
-      // ✅ Use random ID for each cart item (no conflicts)
       final cartItemId = _firestore.collection('temp').doc().id;
 
       final docRef = _firestore
@@ -83,9 +81,9 @@ class CartProvider with ChangeNotifier {
         'addedAt': FieldValue.serverTimestamp(),
       });
 
-      debugPrint('✅ Added to cart: $name x$qty');
+      debugPrint('Added to cart: $name x$qty');
     } catch (e) {
-      debugPrint('❌ Cart error: $e');
+      debugPrint('Cart error: $e');
     }
   }
 
