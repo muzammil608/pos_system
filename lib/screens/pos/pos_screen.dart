@@ -134,8 +134,7 @@ class _PosScreenState extends State<PosScreen> {
                               'Order #${data['orderNumber'] ?? orderId.substring(0, 6)}';
                           final items = List<Map<String, dynamic>>.from(
                             (data['items'] as List? ?? []).map(
-                              (item) => Map<String, dynamic>.from(
-                                  item as Map), // ✅ FIXED
+                              (item) => Map<String, dynamic>.from(item as Map),
                             ),
                           );
 
@@ -224,10 +223,17 @@ class _PosScreenState extends State<PosScreen> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
+        // ✅ User data for profile
+        final user = auth.user!;
+        final userEmail = user.email ?? 'No Email';
+        final userName = user.displayName ?? userEmail.split('@').first;
+
         return Scaffold(
           drawer: Drawer(
-            child: ListView(
+            child: Column(
               children: [
+                // ✅ Logo Header (unchanged)
                 DrawerHeader(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -282,21 +288,159 @@ class _PosScreenState extends State<PosScreen> {
                     ],
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.analytics),
-                  title: const Text('Admin Dashboard'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/admin');
-                  },
+
+                // ✅ Navigation Menu - BLACK TEXT (Original)
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.analytics),
+                        title: const Text('Admin Dashboard'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/admin');
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.kitchen),
+                        title: const Text('Kitchen'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/kitchen');
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.kitchen),
-                  title: const Text('Kitchen'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/kitchen');
-                  },
+
+                // ✅ FIXED Profile Section - CENTERED LOGOUT + PROPER HEIGHT
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(
+                      16, 16, 16, 24), // ✅ Extra bottom padding
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.15),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Avatar
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [AppTheme.primary, AppTheme.secondary],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            userName.isNotEmpty
+                                ? userName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Profile Info
+                      Text(
+                        userName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        userEmail, // ✅ muzmal@gmail.com
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
+                          fontFamily: 'monospace',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        'Cashier',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.primary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ✅ PERFECTLY CENTERED Logout Button
+                      Center(
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.7,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              ).logout();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.logout, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Logout',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -319,16 +463,6 @@ class _PosScreenState extends State<PosScreen> {
                     ),
                   );
                 },
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () {
-                  Provider.of<AuthProvider>(
-                    context,
-                    listen: false,
-                  ).logout();
-                },
-                tooltip: 'Logout',
               ),
             ],
           ),
@@ -380,7 +514,6 @@ class _PosScreenState extends State<PosScreen> {
                                       final productMap = product.toMap();
                                       productMap['qty'] = qty;
                                       await cart.addItem(productMap);
-                                      // ✅ REMOVED SUCCESS POPUP
                                     }
                                   },
                                   child: Card(

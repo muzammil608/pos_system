@@ -46,18 +46,26 @@ class AuthService {
     await userRef.set(data, SetOptions(merge: true));
   }
 
+  /// ✅ FIXED: Now throws FirebaseAuthException for AuthProvider to catch
   Future<User?> login(String email, String password) async {
-    await ensurePersistence(); // Ensure persistence before login
-    final result = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    await ensurePersistence();
 
-    if (result.user != null) {
-      await _syncUserToFirestore(result.user!);
+    try {
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (result.user != null) {
+        await _syncUserToFirestore(result.user!);
+      }
+      return result.user;
+    } on FirebaseAuthException {
+      // ✅ Rethrow so AuthProvider can catch & show custom error
+      rethrow;
+    } catch (e) {
+      rethrow;
     }
-
-    return result.user;
   }
 
   Future<User?> register(String email, String password, {String? name}) async {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/auth_login_result.dart';
 import '../services/firebase/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -27,29 +28,39 @@ class AuthProvider with ChangeNotifier {
     super.dispose();
   }
 
-  Future<String?> login(String email, String password) async {
+  Future<AuthLoginResult?> login(String email, String password) async {
     isLoading = true;
     notifyListeners();
 
     try {
       await _authService.login(email, password);
       return null;
-    } catch (e) {
-      if (e is FirebaseAuthException &&
-          (e.code == 'user-not-found' ||
-              e.code == 'wrong-password' ||
-              e.code == 'invalid-email' ||
-              e.code == 'invalid-credential')) {
-        return 'invalid email or not registered';
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+        case 'invalid-email':
+        case 'wrong-password':
+        case 'invalid-credential':
+        case 'user-disabled':
+          return AuthLoginResult(
+            emailError: 'invalid email or not registered',
+          );
+        default:
+          return const AuthLoginResult(
+            emailError: 'invalid email or not registered',
+          );
       }
-      return e.toString();
+    } catch (e) {
+      return const AuthLoginResult(
+        emailError: 'invalid email or not registered',
+      );
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<String?> register(String email, String password,
+  Future<AuthLoginResult?> register(String email, String password,
       {String? name}) async {
     isLoading = true;
     notifyListeners();
@@ -58,7 +69,7 @@ class AuthProvider with ChangeNotifier {
       await _authService.register(email, password, name: name);
       return null;
     } catch (e) {
-      return e.toString();
+      return AuthLoginResult(emailError: e.toString());
     } finally {
       isLoading = false;
       notifyListeners();
@@ -76,7 +87,7 @@ class AuthProvider with ChangeNotifier {
       }
       return null;
     } catch (e) {
-      return e.toString();
+      return 'Google sign in failed.';
     } finally {
       isLoading = false;
       notifyListeners();
