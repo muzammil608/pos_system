@@ -36,7 +36,6 @@ class ReportService {
     });
   }
 
-  /// Status stats: {pending: 3, ready: 2, completed: 1}
   Stream<Map<String, int>> getOrderStatusStats() {
     return _orders.snapshots().map((snapshot) {
       final stats = <String, int>{'pending': 0, 'ready': 0, 'completed': 0};
@@ -48,7 +47,6 @@ class ReportService {
     });
   }
 
-  /// Today's revenue from all orders (today's date)
   Stream<double> getTodayRevenue() {
     return _orders.snapshots().map((snapshot) {
       final now = DateTime.now();

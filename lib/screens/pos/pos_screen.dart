@@ -9,6 +9,7 @@ import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/product_service.dart';
 import '../../services/printer/printer_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key});
@@ -54,7 +55,6 @@ class _PosScreenState extends State<PosScreen> {
 
   int _readyOrderCount(AsyncSnapshot snapshot) {
     if (!snapshot.hasData) return 0;
-
     return snapshot.data!.docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>;
       return data['status'] == 'ready';
@@ -138,6 +138,24 @@ class _PosScreenState extends State<PosScreen> {
                             ),
                           );
 
+                          final itemWidgets = <Widget>[];
+                          for (final itemMap in items) {
+                            final name = itemMap['name'] ?? 'Unknown';
+                            final rawQty = itemMap['qty'] ??
+                                itemMap['quantity'] ??
+                                itemMap['count'] ??
+                                itemMap['amount'] ??
+                                1;
+                            final qty = int.tryParse(rawQty.toString()) ?? 1;
+                            itemWidgets.add(
+                              Text(
+                                '• $name x$qty',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          }
+
                           return Card(
                             margin: const EdgeInsets.only(bottom: 10),
                             child: ListTile(
@@ -153,11 +171,10 @@ class _PosScreenState extends State<PosScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const SizedBox(height: 6),
-                                  Text(
-                                    items.isNotEmpty
-                                        ? '${items.first['name']} (${items.length} items)'
-                                        : 'No items',
-                                  ),
+                                  if (itemWidgets.isNotEmpty)
+                                    ...itemWidgets
+                                  else
+                                    const Text('No items'),
                                   if (customerName != null &&
                                       customerName.isNotEmpty)
                                     Text('Customer: $customerName'),
@@ -210,6 +227,65 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
+  Widget _buildAvatar({
+    required String? photoUrl,
+    required String userName,
+    double radius = 20,
+    double fontSize = 16,
+  }) {
+    String? resolvedUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      resolvedUrl = photoUrl.contains('googleusercontent.com')
+          ? '${photoUrl.split('=').first}=s400'
+          : photoUrl;
+    }
+
+    if (resolvedUrl != null) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: AppTheme.primary,
+        child: ClipOval(
+          child: CachedNetworkImage(
+            imageUrl: resolvedUrl,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            placeholder: (context, url) =>
+                _buildInitialAvatar(userName, radius, fontSize),
+            errorWidget: (context, url, error) {
+              debugPrint('Avatar load error: $error');
+              return _buildInitialAvatar(userName, radius, fontSize);
+            },
+          ),
+        ),
+      );
+    }
+    return _buildInitialAvatar(userName, radius, fontSize);
+  }
+
+  Widget _buildInitialAvatar(String userName, double radius, double fontSize) {
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [AppTheme.primary, AppTheme.secondary],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<AuthProvider, CartProvider>(
@@ -224,16 +300,16 @@ class _PosScreenState extends State<PosScreen> {
           );
         }
 
-        // ✅ User data for profile
         final user = auth.user!;
         final userEmail = user.email ?? 'No Email';
         final userName = user.displayName ?? userEmail.split('@').first;
+        final photoUrl = user.photoURL;
 
         return Scaffold(
           drawer: Drawer(
             child: Column(
               children: [
-                // ✅ Logo Header (unchanged)
+                // ── Logo Header ──────────────────────────────────────────────
                 DrawerHeader(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -267,10 +343,10 @@ class _PosScreenState extends State<PosScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                        children: const [
                           Text(
                             'POS System',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -289,7 +365,7 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                 ),
 
-                // ✅ Navigation Menu - BLACK TEXT (Original)
+                // ── Navigation Menu ──────────────────────────────────────────
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.zero,
@@ -314,11 +390,10 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                 ),
 
-                // ✅ FIXED Profile Section - CENTERED LOGOUT + PROPER HEIGHT
+                // ── Profile Section ──────────────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(
-                      16, 16, 16, 24), // ✅ Extra bottom padding
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   margin: const EdgeInsets.only(top: 8),
                   decoration: BoxDecoration(
                     color: AppTheme.primary.withOpacity(0.15),
@@ -337,39 +412,14 @@ class _PosScreenState extends State<PosScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Avatar
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [AppTheme.primary, AppTheme.secondary],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            userName.isNotEmpty
-                                ? userName[0].toUpperCase()
-                                : 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      // ✅ Google profile picture (or initial fallback)
+                      _buildAvatar(
+                        photoUrl: photoUrl,
+                        userName: userName,
+                        radius: 28,
+                        fontSize: 22,
                       ),
                       const SizedBox(height: 10),
-
-                      // Profile Info
                       Text(
                         userName,
                         style: const TextStyle(
@@ -381,7 +431,7 @@ class _PosScreenState extends State<PosScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        userEmail, // ✅ muzmal@gmail.com
+                        userEmail,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -400,8 +450,6 @@ class _PosScreenState extends State<PosScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-
-                      // ✅ PERFECTLY CENTERED Logout Button
                       Center(
                         child: SizedBox(
                           width: MediaQuery.of(context).size.width * 0.7,
@@ -422,9 +470,9 @@ class _PosScreenState extends State<PosScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children: [
                                 Icon(Icons.logout, size: 20),
                                 SizedBox(width: 8),
                                 Text(
@@ -452,7 +500,6 @@ class _PosScreenState extends State<PosScreen> {
                 stream: _orderService.getOrders(),
                 builder: (context, snapshot) {
                   final readyCount = _readyOrderCount(snapshot);
-
                   return IconButton(
                     tooltip: 'Ready Orders',
                     onPressed: () => _showReadyOrdersSheet(context),
@@ -463,6 +510,18 @@ class _PosScreenState extends State<PosScreen> {
                     ),
                   );
                 },
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () => Scaffold.of(context).openDrawer(),
+                  child: _buildAvatar(
+                    photoUrl: photoUrl,
+                    userName: userName,
+                    radius: 18,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),

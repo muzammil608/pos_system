@@ -203,6 +203,30 @@ class _KitchenScreenState extends State<KitchenScreen> {
                           final paymentMethod = data['paymentMethod'] ?? 'cash';
                           final orderType = data['orderType'] ?? 'takeaway';
 
+                          final itemWidgets = <Widget>[];
+                          if (data['items'] != null &&
+                              (data['items'] as List).isNotEmpty) {
+                            for (final item in (data['items'] as List)) {
+                              final itemMap = item as Map<String, dynamic>;
+                              final name = itemMap['name'] ?? 'Unknown';
+
+                              final rawQty = itemMap['quantity'] ??
+                                  itemMap['qty'] ??
+                                  itemMap['count'] ??
+                                  itemMap['amount'] ??
+                                  1;
+                              final qty = int.tryParse(rawQty.toString()) ?? 1;
+
+                              itemWidgets.add(
+                                Text(
+                                  '• $name x$qty',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              );
+                            }
+                          }
+
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
@@ -217,14 +241,8 @@ class _KitchenScreenState extends State<KitchenScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   Text('Status: $status'),
-                                  if (data['items'] != null &&
-                                      data['items'].isNotEmpty)
-                                    Text(
-                                      '${data['items'][0]['name']} (${data['items'].length} items)',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
+                                  // ── All items with quantities ──
+                                  ...itemWidgets,
                                   if (customerName != null &&
                                       customerName.isNotEmpty)
                                     Text('Customer: $customerName'),

@@ -22,7 +22,7 @@ dependencies:
   firebase_auth: ^5.3.1
   google_sign_in: ^6.2.2
 
-  # LOCAL DATABASE (OFFLINE SUPPORT)
+  cached_network_image: ^3.3.1
   sqflite: ^2.3.3
   path: ^1.9.0
 

@@ -87,7 +87,6 @@ class OrderService {
         });
   }
 
-  /// 🔥 FIX: stable ordering to prevent UI rebuild chaos
   Stream<QuerySnapshot> getOrders() {
     return _firestore.orders.orderBy('createdAt', descending: true).snapshots();
   }

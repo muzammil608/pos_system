@@ -9,7 +9,6 @@ class ProductGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
 
-    // Temporary static products (replace with Firestore later)
     final products = List.generate(12, (i) {
       return {
         'name': 'Item $i',

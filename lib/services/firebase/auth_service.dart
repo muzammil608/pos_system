@@ -46,7 +46,6 @@ class AuthService {
     await userRef.set(data, SetOptions(merge: true));
   }
 
-  /// ✅ FIXED: Now throws FirebaseAuthException for AuthProvider to catch
   Future<User?> login(String email, String password) async {
     await ensurePersistence();
 
@@ -61,7 +60,6 @@ class AuthService {
       }
       return result.user;
     } on FirebaseAuthException {
-      // ✅ Rethrow so AuthProvider can catch & show custom error
       rethrow;
     } catch (e) {
       rethrow;

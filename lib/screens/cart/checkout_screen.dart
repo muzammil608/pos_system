@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
-import '../../services/firebase/product_service.dart';
 import 'product_list_bottom_sheet.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -27,7 +26,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _showEditItemDialog(
     BuildContext context,
     CartProvider cart,
-    int index,
     Map<String, dynamic> item,
   ) async {
     TextEditingController? qtyController;
@@ -50,9 +48,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-              },
+              onPressed: () => Navigator.pop(dialogContext, false),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
@@ -67,7 +63,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   Navigator.pop(dialogContext, false);
                   return;
                 }
-                cart.updateItemQuantity(item['id'] ?? index.toString(), newQty);
+                // ✅ use cartDocId
+                cart.updateItemQuantity(item['cartDocId'] as String, newQty);
                 Navigator.pop(dialogContext, true);
               },
               child: const Text('Save'),
@@ -99,6 +96,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         builder: (context, cart, child) {
           final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
           final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+
           final topForm = Container(
             color: AppTheme.surface,
             padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardOpen ? 8 : 16),
@@ -122,9 +120,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         onChanged: (value) {
                           setState(() {
                             _orderType = value ?? 'takeaway';
-                            if (_orderType != 'dine_in') {
-                              _tableNumber = null;
-                            }
+                            if (_orderType != 'dine_in') _tableNumber = null;
                           });
                         },
                       ),
@@ -146,9 +142,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               child: Text('Table ${i + 1}'),
                             ),
                           ),
-                          onChanged: (value) {
-                            setState(() => _tableNumber = value);
-                          },
+                          onChanged: (value) =>
+                              setState(() => _tableNumber = value),
                         ),
                       ),
                     ],
@@ -194,7 +189,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   TextField(
                     focusNode: _cashFocus,
                     keyboardType:
-                        TextInputType.numberWithOptions(decimal: true),
+                        const TextInputType.numberWithOptions(decimal: true),
                     onChanged: (value) => setState(() {
                       _tenderedAmount = double.tryParse(value) ?? 0.0;
                     }),
@@ -204,18 +199,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       prefixText: 'Rs ',
                     ),
                   ),
-                  if (_paymentMethod == 'cash' &&
-                      _cashFocus.hasFocus &&
-                      _tenderedAmount < cart.total)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 4.0),
+                  if (_cashFocus.hasFocus && _tenderedAmount < cart.total)
+                    const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
                       child: Text(
                         'Please! Enter Full Amount',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.red, fontSize: 14),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -261,6 +251,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (context, i) {
                     final item = cart.items[i];
+                    final cartDocId = item['cartDocId'] as String? ?? '';
                     final price =
                         ((item['unitPrice'] ?? item['price']) as num?) ?? 0;
                     final qty = (item['qty'] as num?)?.toInt() ?? 1;
@@ -280,6 +271,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         trailing: Wrap(
                           spacing: 4,
                           children: [
+                            // ✅ Fixed: add button now opens product sheet correctly
                             IconButton(
                               icon: const Icon(Icons.add,
                                   color: AppTheme.primary),
@@ -293,25 +285,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 );
                               },
                             ),
+                            // ✅ Fixed: pass item map (not index) to edit dialog
                             IconButton(
-                              icon: const Icon(
-                                Icons.edit,
-                                color: AppTheme.secondary,
-                              ),
+                              icon: const Icon(Icons.edit,
+                                  color: AppTheme.secondary),
                               onPressed: () => _showEditItemDialog(
                                 context,
                                 cart,
-                                i,
                                 item,
                               ),
                             ),
+                            // ✅ Fixed: use cartDocId instead of item['id']
                             IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                color: AppTheme.danger,
-                              ),
-                              onPressed: () =>
-                                  cart.removeItem(item['id'] ?? i.toString()),
+                              icon: const Icon(Icons.delete,
+                                  color: AppTheme.danger),
+                              onPressed: cartDocId.isNotEmpty
+                                  ? () => cart.removeItem(cartDocId)
+                                  : null,
                             ),
                           ],
                         ),
@@ -343,7 +333,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         color: AppTheme.secondary.withValues(alpha: 0.16),
                         blurRadius: 4,
                         offset: const Offset(0, -2),
-                      )
+                      ),
                     ],
                   ),
                   child: Column(
@@ -392,9 +382,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   setState(() => _isSubmitting = true);
 
                                   try {
-                                    final cartSnapshot =
-                                        List<Map<String, dynamic>>.from(
-                                            cart.items);
+                                    final cartSnapshot = cart.items.map((item) {
+                                      final qty = (item['qty'] as num?)
+                                              ?.toInt() ??
+                                          (item['quantity'] as num?)?.toInt() ??
+                                          1;
+                                      final price =
+                                          (item['price'] as num?)?.toDouble() ??
+                                              0.0;
+                                      return <String, dynamic>{
+                                        'name': item['name'] ?? 'Unknown',
+                                        'qty': qty,
+                                        'quantity': qty,
+                                        'price': price,
+                                        'unitPrice': price,
+                                        'lineTotal': price * qty,
+                                        if (item['productId'] != null)
+                                          'productId': item['productId'],
+                                      };
+                                    }).toList();
 
                                     await _orderService.createOrder(
                                       items: cartSnapshot,

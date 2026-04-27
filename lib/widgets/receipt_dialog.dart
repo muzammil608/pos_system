@@ -61,7 +61,7 @@ class ReceiptDialog extends StatelessWidget {
             tax: tax,
             orderNo: orderNo,
             date: date,
-            onDownloadPdf: () => _downloadPdf(context),
+            onPrint: () => _printReceipt(context),
             onClose: () => Navigator.pop(context),
           ),
         ),
@@ -69,7 +69,7 @@ class ReceiptDialog extends StatelessWidget {
     );
   }
 
-  Future<void> _downloadPdf(BuildContext context) async {
+  Future<void> _printReceipt(BuildContext context) async {
     try {
       final pdf = pw.Document();
       pw.MemoryImage? logoImage;
@@ -83,13 +83,22 @@ class ReceiptDialog extends StatelessWidget {
 
       final subtotal = total - tax;
 
+      // Real thermal receipt: 80mm wide, height auto-sizes to content
+      const double pageWidth = 80.0 * PdfPageFormat.mm;
+      const double pageMargin = 6.0 * PdfPageFormat.mm;
+
+      // We use a large height so content is never clipped, then trim on save
+      const double pageHeight = 400.0 * PdfPageFormat.mm;
+
       pdf.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.roll80,
-          margin: const pw.EdgeInsets.all(16),
+          pageFormat:
+              PdfPageFormat(pageWidth, pageHeight, marginAll: pageMargin),
+          clip: false,
           build: (pw.Context context) {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              mainAxisSize: pw.MainAxisSize.min,
               children: [
                 if (logoImage != null)
                   pw.Center(
@@ -190,6 +199,7 @@ class ReceiptDialog extends StatelessWidget {
                     style: const pw.TextStyle(fontSize: 10),
                   ),
                 ),
+                pw.SizedBox(height: 8),
               ],
             );
           },
@@ -197,14 +207,15 @@ class ReceiptDialog extends StatelessWidget {
       );
 
       final bytes = await pdf.save();
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: 'receipt_$orderNo.pdf',
+
+      await Printing.layoutPdf(
+        onLayout: (_) async => bytes,
+        name: 'receipt_$orderNo',
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF download failed: $e')),
+        SnackBar(content: Text('Print failed: $e')),
       );
     }
   }
@@ -239,7 +250,9 @@ class ReceiptDialog extends StatelessWidget {
 
   pw.Widget _pdfItemRow(Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Item';
-    final qty = (item['qty'] as num?)?.toInt() ?? 1;
+    final qty = (item['qty'] as num?)?.toInt() ??
+        (item['quantity'] as num?)?.toInt() ??
+        1;
     final unitPrice =
         ((item['unitPrice'] ?? item['price']) as num?)?.toDouble() ?? 0.0;
     final lineTotal = ((item['lineTotal']) as num?)?.toDouble() ??
@@ -332,7 +345,7 @@ class ReceiptWidget extends StatelessWidget {
   final double tax;
   final String orderNo;
   final String date;
-  final VoidCallback onDownloadPdf;
+  final VoidCallback onPrint;
   final VoidCallback onClose;
 
   const ReceiptWidget({
@@ -351,7 +364,7 @@ class ReceiptWidget extends StatelessWidget {
     required this.tax,
     required this.orderNo,
     required this.date,
-    required this.onDownloadPdf,
+    required this.onPrint,
     required this.onClose,
   });
 
@@ -481,9 +494,9 @@ class ReceiptWidget extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: onDownloadPdf,
-                  icon: const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Download PDF'),
+                  onPressed: onPrint,
+                  icon: const Icon(Icons.print, size: 18),
+                  label: const Text('Print'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
@@ -551,7 +564,9 @@ class _ReceiptItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = item['name']?.toString() ?? 'Item';
-    final qty = (item['qty'] as num?)?.toInt() ?? 1;
+    final qty = (item['qty'] as num?)?.toInt() ??
+        (item['quantity'] as num?)?.toInt() ??
+        1;
     final unitPrice =
         ((item['unitPrice'] ?? item['price']) as num?)?.toDouble() ?? 0.0;
     final lineTotal = ((item['lineTotal']) as num?)?.toDouble() ??

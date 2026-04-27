@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import '../../models/product_model.dart';
-import 'firestore_service.dart'; // ✅ KEEP THIS
+import 'firestore_service.dart';
 import 'dart:typed_data' show Uint8List;
 import 'storage_service.dart';
 
@@ -10,9 +10,7 @@ class ProductService {
   final FirestoreService _firestore = FirestoreService();
   final StorageService _storage = StorageService();
 
-  // 🔥 FIXED: Override to use GLOBAL products
   Stream<List<Product>> get streamProducts {
-    // 🔥 Use global products instead of user-specific
     return _firestore.globalProducts.snapshots().map((snapshot) {
       return snapshot.docs
           .map((doc) => Product.fromMap(doc.data(), doc.id))
@@ -44,7 +42,6 @@ class ProductService {
         if (imageUrl != null) 'imageUrl': imageUrl,
       };
 
-      // 🔥 FIXED: Global products
       await _firestore.globalProducts.add(productData);
       return 'Product created successfully';
     } catch (e) {
