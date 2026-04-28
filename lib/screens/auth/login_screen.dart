@@ -30,13 +30,26 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _goToPos() {
+  void _goToRoleScreen(String role) {
     if (_navigated) return;
     _navigated = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/pos');
+
+      switch (role) {
+        case 'admin':
+          Navigator.pushReplacementNamed(context, '/admin');
+          break;
+        case 'cashier':
+          Navigator.pushReplacementNamed(context, '/pos');
+          break;
+        case 'kitchen':
+          Navigator.pushReplacementNamed(context, '/kitchen');
+          break;
+        default:
+          Navigator.pushReplacementNamed(context, '/pos');
+      }
     });
   }
 
@@ -57,8 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (result == null) {
+      final userRole = auth.role;
       Provider.of<CartProvider>(context, listen: false).clear();
-      _goToPos();
+      _goToRoleScreen(userRole);
     } else {
       setState(() {
         _emailError = result.emailError;
@@ -80,11 +94,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
     if (error != null) {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),
@@ -92,8 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else {
+      final userRole = auth.role;
       Provider.of<CartProvider>(context, listen: false).clear();
-      _goToPos();
+      _goToRoleScreen(userRole);
     }
   }
 

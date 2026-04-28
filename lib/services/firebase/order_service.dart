@@ -20,11 +20,9 @@ class OrderService {
       throw StateError('User not authenticated');
     }
 
-    final counterRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('counters')
-        .doc('order_number');
+    // Global counter for order numbers
+    final counterRef =
+        FirebaseFirestore.instance.collection('counters').doc('order_number');
 
     final nextNumber = await FirebaseFirestore.instance
         .runTransaction<int>((transaction) async {
@@ -50,6 +48,7 @@ class OrderService {
       'tenderedAmount': tenderedAmount,
       'change': change,
       'orderNumber': nextNumber,
+      'createdBy': user.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

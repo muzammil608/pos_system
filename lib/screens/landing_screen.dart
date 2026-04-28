@@ -1,0 +1,75 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import 'auth/login_screen.dart';
+
+class LandingScreen extends StatefulWidget {
+  const LandingScreen({super.key});
+
+  @override
+  State<LandingScreen> createState() => _LandingScreenState();
+}
+
+class _LandingScreenState extends State<LandingScreen> {
+  bool _navigated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _redirect();
+    });
+  }
+
+  void _redirect() {
+    if (_navigated) return;
+    if (!mounted) return;
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    if (auth.isLoading) return;
+
+    if (auth.user != null && auth.userData != null) {
+      _navigated = true;
+      final role = auth.role;
+      switch (role) {
+        case 'admin':
+          Navigator.pushReplacementNamed(context, '/admin');
+          break;
+        case 'cashier':
+          Navigator.pushReplacementNamed(context, '/pos');
+          break;
+        case 'kitchen':
+          Navigator.pushReplacementNamed(context, '/kitchen');
+          break;
+        default:
+          Navigator.pushReplacementNamed(context, '/pos');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+
+    // Try redirecting on every build once data is ready
+    if (auth.user != null && auth.userData != null && !_navigated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _redirect());
+    }
+
+    if (auth.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (auth.user == null) {
+      return const LoginScreen();
+    }
+
+    // User exists but role still loading
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}

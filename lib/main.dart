@@ -7,7 +7,7 @@ import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
 
 import 'routes/app_routes.dart';
-import 'screens/auth/login_screen.dart';
+import 'screens/landing_screen.dart';
 import 'core/theme/app_theme.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -38,25 +38,9 @@ class MyApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, auth, child) => MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: null,
           theme: AppTheme.lightTheme,
-          routes: {
-            ...AppRoutes.routes,
-            '/': (context) {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              if (auth.isLoading) {
-                return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()));
-              }
-              if (auth.user != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.pushReplacementNamed(context, '/pos');
-                });
-                return const SizedBox.shrink(); // Temporary while redirecting
-              }
-              return const LoginScreen();
-            },
-          },
+          home: const LandingScreen(),
+          routes: AppRoutes.routes,
         ),
       ),
     );

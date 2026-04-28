@@ -83,11 +83,8 @@ class ReceiptDialog extends StatelessWidget {
 
       final subtotal = total - tax;
 
-      // Real thermal receipt: 80mm wide, height auto-sizes to content
       const double pageWidth = 80.0 * PdfPageFormat.mm;
       const double pageMargin = 6.0 * PdfPageFormat.mm;
-
-      // We use a large height so content is never clipped, then trim on save
       const double pageHeight = 400.0 * PdfPageFormat.mm;
 
       pdf.addPage(

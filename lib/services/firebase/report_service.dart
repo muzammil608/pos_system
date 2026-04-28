@@ -1,21 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ReportService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  String get _uid {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw StateError('User not authenticated');
-    }
-    return user.uid;
-  }
+  CollectionReference<Map<String, dynamic>> get _orders =>
+      _db.collection('orders');
 
-  Query<Map<String, dynamic>> get _orders =>
-      _db.collection('users').doc(_uid).collection('orders');
-
-  /// Daily sales: List of {date: '2024-10-15', total: 1250}
   Stream<List<Map<String, dynamic>>> getDailySales() {
     return _orders.snapshots().map((snapshot) {
       final Map<String, double> dailyTotals = {};
@@ -23,8 +13,7 @@ class ReportService {
         final data = doc.data();
         final createdAt = data['createdAt'] as Timestamp?;
         if (createdAt != null) {
-          final date =
-              createdAt.toDate().toString().split(' ')[0]; // YYYY-MM-DD
+          final date = createdAt.toDate().toString().split(' ')[0];
           final total = (data['total'] as num?)?.toDouble() ?? 0.0;
           dailyTotals[date] = (dailyTotals[date] ?? 0.0) + total;
         }

@@ -60,7 +60,8 @@ class CartProvider with ChangeNotifier {
     if (_userId.isEmpty) return;
 
     try {
-      final qty = product['qty'] as int? ?? 1;
+      // FIX: Firestore returns num, not int — use .toInt()
+      final qty = (product['qty'] as num?)?.toInt() ?? 1;
       final name = product['name'] as String? ?? 'Unknown';
       final price = (product['price'] as num?)?.toDouble() ?? 0.0;
 

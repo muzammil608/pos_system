@@ -8,7 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/product_service.dart';
-import '../../services/printer/printer_service.dart';
+import '../../widgets/receipt_dialog.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class PosScreen extends StatefulWidget {
@@ -62,6 +62,7 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   void _showReadyOrdersSheet(BuildContext context) {
+    final rootContext = context;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -185,32 +186,63 @@ class _PosScreenState extends State<PosScreen> {
                               ),
                               trailing: ElevatedButton(
                                 onPressed: () async {
-                                  await PrinterService.showReceiptDialog(
-                                    context,
-                                    (data['orderNumber'] ?? orderId).toString(),
-                                    items,
-                                    (data['total'] as num?)?.toDouble() ?? 0.0,
-                                    orderType: orderType,
-                                    tableNumber:
-                                        data['tableNumber']?.toString(),
-                                    customerName: customerName,
-                                    paymentMethod: paymentMethod,
-                                    tenderedAmount:
-                                        (data['tenderedAmount'] as num?)
-                                                ?.toDouble() ??
-                                            0.0,
-                                    change:
-                                        (data['change'] as num?)?.toDouble() ??
-                                            0.0,
-                                    servedBy: 'Cashier',
-                                  );
+                                  // 1. Close bottom sheet
+                                  Navigator.pop(sheetContext);
 
+                                  // 2. Complete the order FIRST
                                   await _orderService.updateStatus(
                                     orderId,
                                     'completed',
                                   );
+
+                                  // 3. Show receipt using ReceiptDialog
+                                  if (!rootContext.mounted) return;
+
+                                  final orderNumber =
+                                      (data['orderNumber'] as num?)?.toInt() ??
+                                          0;
+                                  final total =
+                                      (data['total'] as num?)?.toDouble() ??
+                                          0.0;
+                                  final tendered =
+                                      (data['tenderedAmount'] as num?)
+                                              ?.toDouble() ??
+                                          total;
+                                  final change =
+                                      (data['change'] as num?)?.toDouble() ??
+                                          0.0;
+                                  final createdAt =
+                                      data['createdAt'] as Timestamp?;
+                                  final date = createdAt != null
+                                      ? '${createdAt.toDate().day}/${createdAt.toDate().month}/${createdAt.toDate().year} ${createdAt.toDate().hour.toString().padLeft(2, '0')}:${createdAt.toDate().minute.toString().padLeft(2, '0')}'
+                                      : '';
+                                  final servedBy =
+                                      data['createdBy']?.toString() ??
+                                          'Cashier';
+
+                                  await showDialog(
+                                    context: rootContext,
+                                    barrierDismissible: false,
+                                    builder: (dialogContext) => ReceiptDialog(
+                                      companyName: 'Orion POS',
+                                      phone: '+92-317-7921817',
+                                      email: 'info@orion.com',
+                                      website: 'www.orion.com',
+                                      servedBy: servedBy,
+                                      customerName:
+                                          customerName ?? 'Walk-in Customer',
+                                      orderType: orderType,
+                                      items: items,
+                                      total: total,
+                                      cash: tendered,
+                                      change: change,
+                                      tax: 0.0,
+                                      orderNo: 'ORDER-$orderNumber',
+                                      date: date,
+                                    ),
+                                  );
                                 },
-                                child: const Text('Complete'),
+                                child: const Text('Print & Complete'),
                               ),
                             ),
                           );
@@ -365,27 +397,29 @@ class _PosScreenState extends State<PosScreen> {
                   ),
                 ),
 
-                // ── Navigation Menu ──────────────────────────────────────────
+                // ── Navigation Menu (role-guarded) ──────────────────────────
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.zero,
                     children: [
-                      ListTile(
-                        leading: const Icon(Icons.analytics),
-                        title: const Text('Admin Dashboard'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/admin');
-                        },
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.kitchen),
-                        title: const Text('Kitchen'),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/kitchen');
-                        },
-                      ),
+                      if (auth.isAdmin)
+                        ListTile(
+                          leading: const Icon(Icons.analytics),
+                          title: const Text('Admin Dashboard'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(context, '/admin');
+                          },
+                        ),
+                      if (auth.isAdmin || auth.isKitchen)
+                        ListTile(
+                          leading: const Icon(Icons.kitchen),
+                          title: const Text('Kitchen'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(context, '/kitchen');
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -441,7 +475,7 @@ class _PosScreenState extends State<PosScreen> {
                         textAlign: TextAlign.center,
                       ),
                       Text(
-                        'Cashier',
+                        auth.role.toUpperCase(),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,

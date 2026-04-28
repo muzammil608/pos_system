@@ -23,7 +23,7 @@ class CartWidget extends StatelessWidget {
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
-                    final id = item['id']; // IMPORTANT FIX
+                    final id = item['cartDocId'];
                     if (id != null) {
                       cart.removeItem(id);
                     }
