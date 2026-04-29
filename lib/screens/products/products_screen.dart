@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../widgets/app_navigation.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -273,50 +274,85 @@ class _ProductsScreenState extends State<ProductsScreen> {
         );
       }
 
+      final userEmail = auth.user?.email ?? 'No Email';
+      final userName = auth.user?.displayName ?? userEmail.split('@').first;
+      final photoUrl = auth.user?.photoURL;
+
       return Scaffold(
+        drawer: AppNavigationDrawer(auth: auth, currentRoute: '/products'),
         appBar: AppBar(
           title: const Text('Products'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: 'Add Product',
-              onPressed: () => _showProductForm(context),
+            AppDrawerAvatarButton(
+              photoUrl: photoUrl,
+              userName: userName,
             ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showProductForm(context),
-          backgroundColor: AppTheme.primary,
-          foregroundColor: Colors.white,
-          icon: const Icon(Icons.add),
-          label: const Text('Add Product'),
         ),
         body: Column(
           children: [
             // ── Search bar ───────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (v) =>
-                    setState(() => _searchQuery = v.toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: 'Search products...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) =>
+                          setState(() => _searchQuery = v.toLowerCase()),
+                      decoration: InputDecoration(
+                        hintText: 'Search products...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide(
+                            color: AppTheme.secondary.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(24)),
+                          borderSide:
+                              BorderSide(color: AppTheme.primary, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      ),
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 52,
+                    height: 52,
+                    child: IconButton.filled(
+                      tooltip: 'Add Product',
+                      onPressed: () => _showProductForm(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppTheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          side: BorderSide(
+                            color: AppTheme.primary,
+                            width: 2.0,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),
@@ -490,7 +526,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
-                                              color: AppTheme.primary,
+                                              color: Colors.black,
                                             ),
                                           ),
                                           const SizedBox(width: 8),

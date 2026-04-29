@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/firebase/order_service.dart';
+import '../../widgets/app_navigation.dart';
 import 'product_list_bottom_sheet.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -94,13 +95,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       }
 
+      final userEmail = auth.user?.email ?? 'No Email';
+      final userName = auth.user?.displayName ?? userEmail.split('@').first;
+      final photoUrl = auth.user?.photoURL;
+
       return Scaffold(
+        drawer: AppNavigationDrawer(auth: auth, currentRoute: '/checkout'),
         appBar: AppBar(
           title: const Text('Checkout'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
           ),
+          actions: [
+            AppDrawerAvatarButton(
+              photoUrl: photoUrl,
+              userName: userName,
+            ),
+          ],
         ),
         body: Consumer<CartProvider>(
           builder: (context, cart, child) {

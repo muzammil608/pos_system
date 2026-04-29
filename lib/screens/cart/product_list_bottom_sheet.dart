@@ -27,9 +27,10 @@ class ProductListBottomSheet extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.grey)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardTheme.color,
+                border: Border(
+                    bottom: BorderSide(color: Colors.grey.withOpacity(0.3))),
               ),
               child: Row(
                 children: [

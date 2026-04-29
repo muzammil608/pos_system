@@ -41,7 +41,7 @@ class ProductGrid extends StatelessWidget {
                 'qty': 1,
               }),
               child: Card(
-                elevation: 2,
+                color: Theme.of(context).cardTheme.color,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

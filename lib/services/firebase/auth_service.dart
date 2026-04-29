@@ -66,26 +66,6 @@ class AuthService {
     }
   }
 
-  Future<User?> register(String email, String password, {String? name}) async {
-    await ensurePersistence();
-    final result = await _auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-
-    final user = result.user;
-    if (user != null && name != null && name.trim().isNotEmpty) {
-      await user.updateDisplayName(name.trim());
-      await user.reload();
-    }
-
-    if (_auth.currentUser != null) {
-      await _syncUserToFirestore(_auth.currentUser!);
-    }
-
-    return _auth.currentUser;
-  }
-
   Future<User?> signInWithGoogle() async {
     await ensurePersistence();
     UserCredential result;

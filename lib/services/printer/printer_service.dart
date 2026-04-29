@@ -45,6 +45,7 @@ class PrinterService {
         cash: tenderedAmount,
         change: change,
         tax: tax,
+        paymentMethod: paymentMethod,
         orderNo: orderId,
         date: formattedDate,
       ),

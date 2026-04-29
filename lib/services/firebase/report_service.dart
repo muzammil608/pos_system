@@ -57,4 +57,42 @@ class ReportService {
       return total;
     });
   }
+
+  Stream<List<Map<String, dynamic>>> getOrdersByPeriod(String period) {
+    return _orders.snapshots().map((snapshot) {
+      final now = DateTime.now();
+      final start = switch (period) {
+        'weekly' => DateTime(now.year, now.month, now.day)
+            .subtract(Duration(days: now.weekday - 1)),
+        'monthly' => DateTime(now.year, now.month),
+        'yearly' => DateTime(now.year),
+        _ => DateTime(now.year, now.month, now.day),
+      };
+
+      final orders = <Map<String, dynamic>>[];
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final createdAt = data['createdAt'] as Timestamp?;
+        if (createdAt == null) continue;
+
+        final orderDate = createdAt.toDate();
+        if (orderDate.isBefore(start) || orderDate.isAfter(now)) continue;
+
+        orders.add({
+          'id': doc.id,
+          ...data,
+          'createdAtDate': orderDate,
+        });
+      }
+
+      orders.sort((a, b) {
+        final aDate = a['createdAtDate'] as DateTime;
+        final bDate = b['createdAtDate'] as DateTime;
+        return bDate.compareTo(aDate);
+      });
+
+      return orders;
+    });
+  }
 }

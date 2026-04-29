@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_navigation.dart';
 
 class EmployeeManagerScreen extends StatefulWidget {
   const EmployeeManagerScreen({super.key});
@@ -14,6 +15,8 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
   String _selectedRole = 'cashier';
   bool _isCreating = false;
 
@@ -22,6 +25,7 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -345,128 +349,224 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
           );
         }
 
+        final userEmail = auth.user?.email ?? 'No Email';
+        final userName = auth.user?.displayName ?? userEmail.split('@').first;
+        final photoUrl = auth.user?.photoURL;
+
         return Scaffold(
+          drawer: AppNavigationDrawer(auth: auth, currentRoute: '/employees'),
           appBar: AppBar(
             title: const Text('Employee Manager'),
             backgroundColor: AppTheme.primary,
             foregroundColor: Colors.white,
+            actions: [
+              AppDrawerAvatarButton(
+                photoUrl: photoUrl,
+                userName: userName,
+              ),
+            ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showCreateDialog(context),
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add Employee'),
-          ),
-          body: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: auth.getEmployees(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-
-              final employees = snapshot.data ?? [];
-
-              if (employees.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.people_outline,
-                          size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No employees yet',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () => _showCreateDialog(context),
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Add your first employee'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: employees.length,
-                itemBuilder: (context, index) {
-                  final employee = employees[index];
-                  final name = employee['name']?.toString() ?? 'Unknown';
-                  final email = employee['email']?.toString() ?? '';
-                  final role = employee['role']?.toString() ?? 'cashier';
-                  final userId = employee['id']?.toString() ?? '';
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      leading: CircleAvatar(
-                        backgroundColor: AppTheme.primary.withOpacity(0.12),
-                        child: Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: TextStyle(
-                            color: AppTheme.primary,
-                            fontWeight: FontWeight.bold,
+          body: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) =>
+                            setState(() => _searchQuery = v.toLowerCase()),
+                        decoration: InputDecoration(
+                          hintText: 'Search employees...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                        ),
-                      ),
-                      title: Text(
-                        name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        '$email\nRole: ${role.toUpperCase()}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                        ),
-                      ),
-                      isThreeLine: true,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit,
-                                color: Colors.blue, size: 20),
-                            onPressed: () => _showEditRoleDialog(
-                              context,
-                              userId,
-                              role,
-                              name,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: AppTheme.secondary.withValues(alpha: 0.25),
                             ),
-                            tooltip: 'Change Role',
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete,
-                                color: Colors.red, size: 20),
-                            onPressed: () =>
-                                _confirmDelete(context, userId, name),
-                            tooltip: 'Delete',
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                            borderSide:
+                                BorderSide(color: AppTheme.primary, width: 1.5),
                           ),
-                        ],
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 0),
+                        ),
                       ),
                     ),
-                  );
-                },
-              );
-            },
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: IconButton.filled(
+                        tooltip: 'Add Employee',
+                        onPressed: () => _showCreateDialog(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.primary,
+                          shape: CircleBorder(
+                            side: BorderSide(
+                              color: AppTheme.secondary.withValues(alpha: 0.25),
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: auth.getEmployees(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+
+                    final employees = snapshot.data ?? [];
+                    final filteredEmployees = employees.where((employee) {
+                      final name =
+                          employee['name']?.toString().toLowerCase() ?? '';
+                      final email =
+                          employee['email']?.toString().toLowerCase() ?? '';
+                      final role =
+                          employee['role']?.toString().toLowerCase() ?? '';
+                      return _searchQuery.isEmpty ||
+                          name.contains(_searchQuery) ||
+                          email.contains(_searchQuery) ||
+                          role.contains(_searchQuery);
+                    }).toList();
+
+                    if (employees.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.people_outline,
+                                size: 64, color: Colors.grey[400]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No employees yet',
+                              style: TextStyle(
+                                  fontSize: 18, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (filteredEmployees.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off,
+                                size: 64, color: Colors.grey[400]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No employees match "$_searchQuery"',
+                              style: TextStyle(
+                                  fontSize: 18, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredEmployees.length,
+                      itemBuilder: (context, index) {
+                        final employee = filteredEmployees[index];
+                        final name = employee['name']?.toString() ?? 'Unknown';
+                        final email = employee['email']?.toString() ?? '';
+                        final role = employee['role']?.toString() ?? 'cashier';
+                        final userId = employee['id']?.toString() ?? '';
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  AppTheme.primary.withOpacity(0.12),
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: TextStyle(
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              '$email\nRole: ${role.toUpperCase()}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 13,
+                              ),
+                            ),
+                            isThreeLine: true,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.blue, size: 20),
+                                  onPressed: () => _showEditRoleDialog(
+                                    context,
+                                    userId,
+                                    role,
+                                    name,
+                                  ),
+                                  tooltip: 'Change Role',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red, size: 20),
+                                  onPressed: () =>
+                                      _confirmDelete(context, userId, name),
+                                  tooltip: 'Delete',
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
       },

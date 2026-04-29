@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/report_service.dart';
+import '../../widgets/app_navigation.dart';
 
 class KitchenScreen extends StatefulWidget {
   const KitchenScreen({super.key});
@@ -49,115 +50,13 @@ class _KitchenScreenState extends State<KitchenScreen> {
         }
 
         final userRole = auth.role;
-        final userName = auth.user?.displayName ?? 'Kitchen Staff';
+        final userEmail = auth.user?.email ?? 'No Email';
+        final userName = auth.user?.displayName ?? userEmail.split('@').first;
+        final photoUrl = auth.user?.photoURL;
 
         return Scaffold(
           backgroundColor: AppTheme.softBackground,
-          drawer: Drawer(
-            child: ListView(
-              children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.primary, AppTheme.secondary],
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [AppTheme.primary, AppTheme.accent],
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                userName.isNotEmpty
-                                    ? userName[0].toUpperCase()
-                                    : 'K',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                userName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: userRole == 'admin'
-                                      ? Colors.blue
-                                      : Colors.green,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  userRole.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (userRole == 'admin')
-                  ListTile(
-                    leading: const Icon(Icons.point_of_sale),
-                    title: const Text('POS'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/pos');
-                    },
-                  ),
-                if (userRole == 'admin')
-                  ListTile(
-                    leading: const Icon(Icons.analytics),
-                    title: const Text('Admin Dashboard'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/admin');
-                    },
-                  ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title:
-                      const Text('Logout', style: TextStyle(color: Colors.red)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Provider.of<AuthProvider>(context, listen: false).logout();
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/login', (route) => false);
-                  },
-                ),
-              ],
-            ),
-          ),
+          drawer: AppNavigationDrawer(auth: auth, currentRoute: '/kitchen'),
           appBar: AppBar(
             title: Row(
               children: [
@@ -184,30 +83,9 @@ class _KitchenScreenState extends State<KitchenScreen> {
             foregroundColor: Colors.white,
             elevation: 0,
             actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: GestureDetector(
-                  onTap: () => Scaffold.of(context).openDrawer(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.accent],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              AppDrawerAvatarButton(
+                photoUrl: photoUrl,
+                userName: userName,
               ),
             ],
           ),

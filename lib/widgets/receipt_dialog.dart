@@ -17,6 +17,7 @@ class ReceiptDialog extends StatelessWidget {
   final double cash;
   final double change;
   final double tax;
+  final String paymentMethod;
   final String orderNo;
   final String date;
 
@@ -34,6 +35,7 @@ class ReceiptDialog extends StatelessWidget {
     required this.cash,
     required this.change,
     required this.tax,
+    required this.paymentMethod,
     required this.orderNo,
     required this.date,
   });
@@ -59,6 +61,7 @@ class ReceiptDialog extends StatelessWidget {
             cash: cash,
             change: change,
             tax: tax,
+            paymentMethod: paymentMethod,
             orderNo: orderNo,
             date: date,
             onPrint: () => _printReceipt(context),
@@ -180,8 +183,10 @@ class ReceiptDialog extends StatelessWidget {
                 _pdfAmountRow('Tax', tax),
                 _pdfAmountRow('TOTAL', total, isBold: true),
                 pw.SizedBox(height: 8),
-                _pdfAmountRow('Cash', cash),
-                _pdfAmountRow('CHANGE', change),
+                if (paymentMethod == 'cash') ...[
+                  _pdfAmountRow('Cash', cash),
+                  _pdfAmountRow('CHANGE', change),
+                ],
                 pw.SizedBox(height: 12),
                 pw.Center(
                   child: pw.Text(
@@ -340,6 +345,7 @@ class ReceiptWidget extends StatelessWidget {
   final double cash;
   final double change;
   final double tax;
+  final String paymentMethod;
   final String orderNo;
   final String date;
   final VoidCallback onPrint;
@@ -359,6 +365,7 @@ class ReceiptWidget extends StatelessWidget {
     required this.cash,
     required this.change,
     required this.tax,
+    required this.paymentMethod,
     required this.orderNo,
     required this.date,
     required this.onPrint,
@@ -459,9 +466,11 @@ class ReceiptWidget extends StatelessWidget {
           const SizedBox(height: 4),
           _amountLine('TOTAL', total, isBold: true),
           const SizedBox(height: 12),
-          _amountLine('Cash', cash),
-          _amountLine('CHANGE', change),
-          const SizedBox(height: 12),
+          if (paymentMethod == 'cash') ...[
+            _amountLine('Cash', cash),
+            _amountLine('CHANGE', change),
+            const SizedBox(height: 12),
+          ],
           Text(
             'Thank you for visiting us',
             textAlign: TextAlign.center,

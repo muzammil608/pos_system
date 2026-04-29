@@ -155,38 +155,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<AuthLoginResult?> register(
-    String email,
-    String password, {
-    String? name,
-  }) async {
-    isLoading = true;
-    notifyListeners();
-
-    try {
-      await _authService.register(email, password, name: name);
-
-      if (user != null) {
-        await _firestore.collection('users').doc(user!.uid).set({
-          'role': 'cashier',
-          'name': name ?? email.split('@')[0],
-          'email': email,
-          'isActive': true,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        await _loadUserRole(user);
-      }
-
-      return null;
-    } catch (e) {
-      isLoading = false;
-      notifyListeners();
-      return AuthLoginResult(
-        emailError: e.toString(),
-      );
-    }
-  }
-
   Future<String?> signInWithGoogle() async {
     isLoading = true;
     notifyListeners();
