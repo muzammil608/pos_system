@@ -17,6 +17,7 @@ class ProductService {
     required String name,
     required double price,
     required String category,
+    int? iconCodePoint,
   }) async {
     try {
       final productData = {
@@ -25,6 +26,11 @@ class ProductService {
         'category': category,
         'createdAt': FieldValue.serverTimestamp(),
       };
+
+      // Add icon code point if provided
+      if (iconCodePoint != null) {
+        productData['iconCodePoint'] = iconCodePoint;
+      }
 
       await _firestore.products.add(productData);
       return 'Product created successfully';
@@ -38,13 +44,21 @@ class ProductService {
     required String name,
     required double price,
     required String category,
+    int? iconCodePoint,
   }) async {
     try {
-      await _firestore.products.doc(id).update({
+      final updateData = {
         'name': name,
         'price': price,
         'category': category,
-      });
+      };
+
+      // Add icon code point if provided
+      if (iconCodePoint != null) {
+        updateData['iconCodePoint'] = iconCodePoint;
+      }
+
+      await _firestore.products.doc(id).update(updateData);
       return 'Product updated successfully';
     } catch (e) {
       return 'Error: $e';

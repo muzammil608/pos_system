@@ -277,12 +277,18 @@ class AppNavigationDrawer extends StatelessWidget {
                     width: MediaQuery.of(context).size.width * 0.7,
                     height: 48,
                     child: ElevatedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(context);
-                        Provider.of<AuthProvider>(
+                        await Provider.of<AuthProvider>(
                           context,
                           listen: false,
                         ).logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            '/login',
+                            (route) => false,
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.redAccent,

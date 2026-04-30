@@ -468,34 +468,56 @@ class _PosScreenState extends State<PosScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Badge(
-                              isLabelVisible: cart.items.isNotEmpty,
-                              label: Text('${cart.items.length}'),
-                              child: SizedBox(
-                                height: 55,
-                                child: OutlinedButton(
-                                  onPressed: cart.items.isEmpty
-                                      ? null
-                                      : () => Navigator.pushNamed(
-                                          context, '/checkout'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side:
-                                        const BorderSide(color: Colors.white70),
-                                    disabledForegroundColor: Colors.white54,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(24),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                SizedBox(
+                                  height: 55,
+                                  width: double.infinity,
+                                  child: OutlinedButton(
+                                    onPressed: cart.items.isEmpty
+                                        ? null
+                                        : () => Navigator.pushNamed(
+                                            context, '/checkout'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      side: const BorderSide(
+                                          color: Colors.white70),
+                                      disabledForegroundColor: Colors.white54,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
                                     ),
-                                  ),
-                                  child: const FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'Proceed to Checkout',
-                                      textAlign: TextAlign.center,
+                                    child: const FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        'Proceed to Checkout',
+                                        textAlign: TextAlign.center,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                                if (cart.items.isNotEmpty)
+                                  Positioned(
+                                    top: -6,
+                                    right: -6,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${cart.items.length}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 16),

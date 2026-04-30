@@ -409,22 +409,22 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    SizedBox(
+                    // + button with guaranteed circle border using Container
+                    Container(
                       width: 52,
                       height: 52,
-                      child: IconButton.filled(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.secondary.withValues(alpha: 0.25),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: IconButton(
                         tooltip: 'Add Employee',
                         onPressed: () => _showCreateDialog(context),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppTheme.primary,
-                          shape: CircleBorder(
-                            side: BorderSide(
-                              color: AppTheme.secondary.withValues(alpha: 0.25),
-                            ),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add),
+                        icon: Icon(Icons.add, color: AppTheme.primary),
                       ),
                     ),
                   ],

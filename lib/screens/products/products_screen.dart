@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/icon_helper.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
@@ -35,190 +36,272 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final formKey = GlobalKey<FormState>();
     final isEdit = product != null;
 
+    // Selected icon - use product's icon or default based on category
+    IconData selectedIcon = product?.icon ?? Icons.fastfood;
+    if (!isEdit) {
+      // Set default icon based on initial category (empty for new products)
+      selectedIcon = IconHelper.getDefaultIcon(categoryController.text);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    isEdit ? 'Edit Product' : 'Add Product',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Name
-                  TextFormField(
-                    controller: nameController,
-                    autofocus: !isEdit,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Product Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.shopping_bag_outlined),
-                    ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Name is required'
-                        : null,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Price
-                  TextFormField(
-                    controller: priceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Price',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.attach_money),
-                      prefixText: 'Rs ',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty)
-                        return 'Price is required';
-                      if (double.tryParse(v.trim()) == null) {
-                        return 'Enter a valid number';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Category
-                  TextFormField(
-                    controller: categoryController,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category_outlined),
-                      hintText: 'e.g. Drinks, Food, Snacks',
-                    ),
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Category is required'
-                        : null,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Save button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: Consumer<ProductProvider>(
-                      builder: (context, provider, _) {
-                        return ElevatedButton.icon(
-                          onPressed: provider.isLoading
-                              ? null
-                              : () async {
-                                  if (!formKey.currentState!.validate()) return;
-
-                                  final name = nameController.text.trim();
-                                  final price =
-                                      double.parse(priceController.text.trim());
-                                  final category =
-                                      categoryController.text.trim();
-
-                                  String? error;
-
-                                  if (isEdit) {
-                                    error = await provider.updateProduct(
-                                      id: product!.id,
-                                      name: name,
-                                      price: price,
-                                      category: category,
-                                    );
-                                  } else {
-                                    error = await provider.createProduct(
-                                      name: name,
-                                      price: price,
-                                      category: category,
-                                    );
-                                  }
-
-                                  if (!sheetContext.mounted) return;
-                                  Navigator.pop(sheetContext);
-
-                                  if (error != null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(error),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(isEdit
-                                            ? 'Product updated'
-                                            : 'Product added'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                },
-                          icon: provider.isLoading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(isEdit ? Icons.save : Icons.add),
-                          label: Text(
-                            provider.isLoading
-                                ? (isEdit ? 'Saving...' : 'Adding...')
-                                : (isEdit ? 'Save Changes' : 'Add Product'),
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-            ),
-          ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Handle bar
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        isEdit ? 'Edit Product' : 'Add Product',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Name
+                      TextFormField(
+                        controller: nameController,
+                        autofocus: !isEdit,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Product Name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.shopping_bag_outlined),
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Name is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Price
+                      TextFormField(
+                        controller: priceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Price',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.attach_money),
+                          prefixText: 'Rs ',
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty)
+                            return 'Price is required';
+                          if (double.tryParse(v.trim()) == null) {
+                            return 'Enter a valid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Category
+                      TextFormField(
+                        controller: categoryController,
+                        textCapitalization: TextCapitalization.words,
+                        onChanged: (value) {
+                          // Auto-update default icon when category changes (for new products)
+                          if (!isEdit && value.isNotEmpty) {
+                            final defaultIcon =
+                                IconHelper.getDefaultIcon(value);
+                            setSheetState(() {
+                              selectedIcon = defaultIcon;
+                            });
+                          }
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.category_outlined),
+                          hintText: 'e.g. Drinks, Pizza, Burgers',
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Category is required'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Icon picker
+                      const Text(
+                        'Icon',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 60,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: IconHelper.fastFoodIcons.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final icon = IconHelper.fastFoodIcons[index];
+                            final isSelected = icon == selectedIcon;
+                            return GestureDetector(
+                              onTap: () {
+                                setSheetState(() {
+                                  selectedIcon = icon;
+                                });
+                              },
+                              child: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? AppTheme.primary.withValues(alpha: 0.15)
+                                      : Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.primary
+                                        : Colors.grey[300]!,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: isSelected
+                                      ? AppTheme.primary
+                                      : Colors.grey[600],
+                                  size: 24,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Save button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: Consumer<ProductProvider>(
+                          builder: (context, provider, _) {
+                            return ElevatedButton.icon(
+                              onPressed: provider.isLoading
+                                  ? null
+                                  : () async {
+                                      if (!formKey.currentState!.validate())
+                                        return;
+
+                                      final name = nameController.text.trim();
+                                      final price = double.parse(
+                                          priceController.text.trim());
+                                      final category =
+                                          categoryController.text.trim();
+                                      final iconCodePoint =
+                                          selectedIcon.codePoint;
+
+                                      String? error;
+
+                                      if (isEdit) {
+                                        error = await provider.updateProduct(
+                                          id: product!.id,
+                                          name: name,
+                                          price: price,
+                                          category: category,
+                                          iconCodePoint: iconCodePoint,
+                                        );
+                                      } else {
+                                        error = await provider.createProduct(
+                                          name: name,
+                                          price: price,
+                                          category: category,
+                                          iconCodePoint: iconCodePoint,
+                                        );
+                                      }
+
+                                      if (!sheetContext.mounted) return;
+                                      Navigator.pop(sheetContext);
+
+                                      if (error != null) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(error),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(isEdit
+                                                ? 'Product updated'
+                                                : 'Product added'),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              icon: provider.isLoading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(isEdit ? Icons.save : Icons.add),
+                              label: Text(
+                                provider.isLoading
+                                    ? (isEdit ? 'Saving...' : 'Adding...')
+                                    : (isEdit ? 'Save Changes' : 'Add Product'),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -332,24 +415,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  SizedBox(
+                  // + button with guaranteed circle border using Container
+                  Container(
                     width: 52,
                     height: 52,
-                    child: IconButton.filled(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.secondary.withValues(alpha: 0.25),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: IconButton(
                       tooltip: 'Add Product',
                       onPressed: () => _showProductForm(context),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppTheme.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: BorderSide(
-                            color: AppTheme.primary,
-                            width: 2.0,
-                          ),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add),
+                      icon: Icon(Icons.add, color: AppTheme.primary),
                     ),
                   ),
                 ],
@@ -499,12 +580,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       leading: CircleAvatar(
                                         backgroundColor:
                                             AppTheme.primary.withOpacity(0.12),
-                                        child: Text(
-                                          product.name[0].toUpperCase(),
-                                          style: TextStyle(
-                                            color: AppTheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        child: Icon(
+                                          product.icon,
+                                          color: AppTheme.primary,
+                                          size: 24,
                                         ),
                                       ),
                                       title: Text(

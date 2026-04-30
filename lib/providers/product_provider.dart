@@ -16,6 +16,7 @@ class ProductProvider extends ChangeNotifier {
     required String name,
     required double price,
     required String category,
+    int? iconCodePoint,
   }) async {
     setLoading(true);
     try {
@@ -23,6 +24,7 @@ class ProductProvider extends ChangeNotifier {
         name: name,
         price: price,
         category: category,
+        iconCodePoint: iconCodePoint,
       );
       notifyListeners();
       return result;
@@ -36,6 +38,7 @@ class ProductProvider extends ChangeNotifier {
     required String name,
     required double price,
     required String category,
+    int? iconCodePoint,
   }) async {
     setLoading(true);
     try {
@@ -44,6 +47,7 @@ class ProductProvider extends ChangeNotifier {
         name: name,
         price: price,
         category: category,
+        iconCodePoint: iconCodePoint,
       );
       notifyListeners();
       return result;

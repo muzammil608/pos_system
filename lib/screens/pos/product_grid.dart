@@ -48,10 +48,10 @@ class ProductGrid extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.fastfood,
+                    Icon(
+                      product.icon,
                       size: 40,
-                      color: Colors.grey,
+                      color: Colors.black,
                     ),
                     const SizedBox(height: 8),
                     Text(
