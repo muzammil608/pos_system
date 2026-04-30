@@ -259,6 +259,18 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
+  /// Returns number of columns based on screen width:
+  /// < 600px  → 2 (mobile)
+  /// < 900px  → 3 (tablet portrait)
+  /// < 1200px → 4 (tablet landscape / small web)
+  /// >= 1200px → 5 (desktop web)
+  int _crossAxisCount(double width) {
+    if (width >= 1200) return 5;
+    if (width >= 900) return 4;
+    if (width >= 600) return 3;
+    return 2;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<AuthProvider, CartProvider>(
@@ -393,62 +405,72 @@ class _PosScreenState extends State<PosScreen> {
                             );
                           }
 
-                          return GridView.builder(
-                            padding: const EdgeInsets.all(10),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.75,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                            ),
-                            itemCount: products.length,
-                            itemBuilder: (_, index) {
-                              final product = products[index];
-                              return Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: () async {
-                                    final qty = await _showQtyDialog(
-                                        context, product.name);
-                                    if (qty != null && qty > 0) {
-                                      final productMap = product.toMap();
-                                      productMap['qty'] = qty;
-                                      await cart.addItem(productMap);
-                                    }
-                                  },
-                                  child: Card(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              product.name,
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 3,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                          // ✅ Responsive grid — adapts columns to screen width
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final columns =
+                                  _crossAxisCount(constraints.maxWidth);
+                              return GridView.builder(
+                                padding: const EdgeInsets.all(10),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  childAspectRatio: 1.1,
+                                  mainAxisSpacing: 10,
+                                  crossAxisSpacing: 10,
+                                ),
+                                itemCount: products.length,
+                                itemBuilder: (_, index) {
+                                  final product = products[index];
+                                  return Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(8),
+                                      onTap: () async {
+                                        final qty = await _showQtyDialog(
+                                            context, product.name);
+                                        if (qty != null && qty > 0) {
+                                          final productMap = product.toMap();
+                                          productMap['qty'] = qty;
+                                          await cart.addItem(productMap);
+                                        }
+                                      },
+                                      child: Card(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(10),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  product.name,
+                                                  style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 3,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                'Rs ${product.price.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
                                           ),
-                                          Text(
-                                            'Rs ${product.price.toStringAsFixed(0)}',
-                                            style: const TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               );
                             },
                           );
@@ -521,7 +543,6 @@ class _PosScreenState extends State<PosScreen> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          // ── Ready Orders button ──────────────────────────
                           Expanded(
                             child: StreamBuilder(
                               stream: _orderService.getOrders(),

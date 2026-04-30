@@ -104,8 +104,22 @@ class AuthProvider with ChangeNotifier {
     }
 
     try {
-      await _authService.login(trimmedEmail, trimmedPassword);
-      await _loadUserRole(user);
+      // ✅ Use the returned user directly from auth_service login
+      final loggedInUser =
+          await _authService.login(trimmedEmail, trimmedPassword);
+      await _loadUserRole(loggedInUser);
+
+      // ✅ Block deactivated (deleted) employees from logging in
+      final isActive = userData?['isActive'] ?? true;
+      if (!isActive) {
+        await logout();
+        isLoading = false;
+        notifyListeners();
+        return AuthLoginResult(
+          emailError: "This account has been deactivated.",
+          passwordError: "This account has been deactivated.",
+        );
+      }
 
       isLoading = false;
       notifyListeners();
