@@ -149,59 +149,22 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
                           if (!dialogContext.mounted) return;
                           Navigator.pop(dialogContext);
 
+                          if (!context.mounted) return;
+
                           final bool success = result['success'] == true;
                           final String? errorMsg = result['error']?.toString();
-                          final String? empEmail = result['email']?.toString();
-                          final String? empPassword =
-                              result['password']?.toString();
 
-                          if (success &&
-                              empEmail != null &&
-                              empPassword != null) {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Employee Created'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Employee account created successfully.',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text('Email: $empEmail'),
-                                    const SizedBox(height: 8),
-                                    Text('Password: $empPassword'),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'You are still logged in as admin.',
-                                      style: TextStyle(
-                                          color: Colors.green, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text('OK'),
-                                  ),
-                                ],
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Employee created successfully'
+                                    : errorMsg ?? 'Failed to create employee',
                               ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    errorMsg ?? 'Failed to create employee'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
+                              backgroundColor:
+                                  success ? Colors.green : Colors.red,
+                            ),
+                          );
                         },
                   child: _isCreating
                       ? const SizedBox(
@@ -409,7 +372,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    // + button with guaranteed circle border using Container
                     Container(
                       width: 52,
                       height: 52,

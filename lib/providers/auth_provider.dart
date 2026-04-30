@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/auth_login_result.dart';
@@ -14,8 +15,8 @@ class AuthProvider with ChangeNotifier {
   StreamSubscription<User?>? _authSub;
   bool isLoading = false;
 
-  String? _adminEmail;
-  String? _adminPassword;
+  // Flag to ignore auth state changes during employee creation
+  bool _ignoringAuthChanges = false;
 
   String get role => userData?['role'] ?? 'cashier';
   bool get isAdmin => role == 'admin';
@@ -28,15 +29,16 @@ class AuthProvider with ChangeNotifier {
     _loadUserRole(user);
 
     _authSub = _authService.authStateChanges.listen((updatedUser) {
+      // Skip processing if we are in the middle of creating an employee
+      if (_ignoringAuthChanges) return;
+
       user = updatedUser;
       if (updatedUser != null) {
         _loadUserRole(updatedUser);
       } else {
         userData = null;
-        _adminEmail = null;
-        _adminPassword = null;
+        notifyListeners();
       }
-      notifyListeners();
     });
   }
 
@@ -93,7 +95,6 @@ class AuthProvider with ChangeNotifier {
     if (trimmedEmail.isEmpty || trimmedPassword.isEmpty) {
       isLoading = false;
       notifyListeners();
-
       return AuthLoginResult(
         emailError:
             trimmedEmail.isEmpty ? "Please fill out required field!" : null,
@@ -105,9 +106,6 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.login(trimmedEmail, trimmedPassword);
       await _loadUserRole(user);
-
-      _adminEmail = trimmedEmail;
-      _adminPassword = trimmedPassword;
 
       isLoading = false;
       notifyListeners();
@@ -147,7 +145,6 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       isLoading = false;
       notifyListeners();
-
       return AuthLoginResult(
         emailError: "An unexpected error occurred",
         passwordError: "An unexpected error occurred",
@@ -170,9 +167,6 @@ class AuthProvider with ChangeNotifier {
 
       await _loadUserRole(result);
 
-      _adminEmail = result.email;
-      _adminPassword = null;
-
       isLoading = false;
       notifyListeners();
       return null;
@@ -190,25 +184,9 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.logout();
       userData = null;
-      _adminEmail = null;
-      _adminPassword = null;
     } finally {
       isLoading = false;
       notifyListeners();
-    }
-  }
-
-  Future<bool> updateUserRole(String userId, String newRole) async {
-    if (!isAdmin) return false;
-
-    try {
-      await _firestore.collection('users').doc(userId).update({
-        'role': newRole,
-      });
-      return true;
-    } catch (e) {
-      debugPrint('Error updating role: $e');
-      return false;
     }
   }
 
@@ -223,15 +201,34 @@ class AuthProvider with ChangeNotifier {
     }
 
     final adminUid = user!.uid;
-    final adminEmail = _adminEmail;
-    final adminPassword = _adminPassword;
+    final adminUserData =
+        Map<String, dynamic>.from(userData!); // snapshot admin data
+    FirebaseApp? secondaryApp;
 
     try {
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      // Pause the auth listener — any Firebase auth state changes triggered
+      // by the secondary app will be completely ignored.
+      _ignoringAuthChanges = true;
+
+      secondaryApp = await Firebase.initializeApp(
+        name: 'employeeCreation_${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+
+      // Create employee on secondary instance — primary admin session untouched
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       final newUid = credential.user!.uid;
 
+      // Sign out secondary immediately
+      await secondaryAuth.signOut();
+
+      // Write employee Firestore doc
       await _firestore.collection('users').doc(newUid).set({
         'role': role,
         'name': name,
@@ -241,26 +238,10 @@ class AuthProvider with ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      if (adminEmail != null && adminPassword != null) {
-        try {
-          await _authService.login(adminEmail, adminPassword);
-          await _loadUserRole(_authService.currentUser);
-        } catch (e) {
-          debugPrint('Auto re-login failed: $e');
-          return {
-            'success': true,
-            'email': email,
-            'password': password,
-            'relogin': false,
-          };
-        }
-      }
-
       return {
         'success': true,
         'email': email,
         'password': password,
-        'relogin': true,
       };
     } on FirebaseAuthException catch (e) {
       debugPrint('Error creating employee auth: $e');
@@ -274,6 +255,18 @@ class AuthProvider with ChangeNotifier {
         'success': false,
         'error': 'Failed to create employee: $e',
       };
+    } finally {
+      // Clean up secondary app
+      await secondaryApp?.delete();
+
+      // Explicitly restore admin state in case anything changed
+      user = _authService.currentUser;
+      userData = adminUserData;
+
+      // Resume auth listener
+      _ignoringAuthChanges = false;
+
+      notifyListeners();
     }
   }
 
@@ -287,6 +280,20 @@ class AuthProvider with ChangeNotifier {
         return 'Password is too weak';
       default:
         return 'Failed to create employee';
+    }
+  }
+
+  Future<bool> updateUserRole(String userId, String newRole) async {
+    if (!isAdmin) return false;
+
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'role': newRole,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error updating role: $e');
+      return false;
     }
   }
 

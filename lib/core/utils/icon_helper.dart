@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Helper class to map categories to icons and provide icon picker options
 class IconHelper {
-  // Fast food icons for the picker
   static const List<IconData> fastFoodIcons = [
     Icons.fastfood,
     Icons.local_pizza,
@@ -18,56 +16,49 @@ class IconHelper {
     Icons.ramen_dining,
     Icons.takeout_dining,
     Icons.breakfast_dining,
-    Icons.no_meals,
-    Icons.kitchen,
     Icons.restaurant,
     Icons.restaurant_menu,
     Icons.set_meal,
   ];
 
-  // Map categories to default icons
+  /// Map categories to default icons
   static IconData getDefaultIcon(String category) {
-    final lowerCategory = category.toLowerCase();
+    final lower = category.toLowerCase();
 
-    if (lowerCategory.contains('pizza')) {
+    if (lower.contains('pizza')) {
       return Icons.local_pizza;
-    } else if (lowerCategory.contains('burger')) {
+    } else if (lower.contains('burger')) {
       return Icons.lunch_dining;
-    } else if (lowerCategory.contains('drink') ||
-        lowerCategory.contains('beverage') ||
-        lowerCategory.contains('coffee') ||
-        lowerCategory.contains('tea') ||
-        lowerCategory.contains('juice')) {
+    } else if (lower.contains('drink') ||
+        lower.contains('beverage') ||
+        lower.contains('coffee') ||
+        lower.contains('tea') ||
+        lower.contains('juice')) {
       return Icons.local_cafe;
-    } else if (lowerCategory.contains('dessert') ||
-        lowerCategory.contains('ice cream') ||
-        lowerCategory.contains('sweet')) {
+    } else if (lower.contains('dessert') ||
+        lower.contains('ice cream') ||
+        lower.contains('sweet')) {
       return Icons.icecream;
-    } else if (lowerCategory.contains('bakery') ||
-        lowerCategory.contains('bread') ||
-        lowerCategory.contains('cake')) {
+    } else if (lower.contains('bakery') ||
+        lower.contains('bread') ||
+        lower.contains('cake')) {
       return Icons.bakery_dining;
-    } else if (lowerCategory.contains('rice') ||
-        lowerCategory.contains('biryani') ||
-        lowerCategory.contains('curry')) {
+    } else if (lower.contains('rice') ||
+        lower.contains('biryani') ||
+        lower.contains('curry')) {
       return Icons.ramen_dining;
-    } else if (lowerCategory.contains('chicken') ||
-        lowerCategory.contains('meat')) {
+    } else if (lower.contains('chicken') || lower.contains('meat')) {
       return Icons.dinner_dining;
-    } else if (lowerCategory.contains('breakfast')) {
+    } else if (lower.contains('breakfast')) {
       return Icons.breakfast_dining;
-    } else if (lowerCategory.contains('snack')) {
-      return Icons.bakery_dining;
-    } else if (lowerCategory.contains('fries') ||
-        lowerCategory.contains('chips')) {
-      return Icons.takeout_dining;
+    } else if (lower.contains('snack')) {
+      return Icons.fastfood;
     }
 
     return Icons.fastfood;
   }
 
-  // Get icon from code point
   static IconData fromCodePoint(int codePoint) {
-    return IconData(codePoint, fontFamily: 'MaterialIcons');
+    return Icons.fastfood;
   }
 }
