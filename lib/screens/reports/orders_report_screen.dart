@@ -14,7 +14,15 @@ class OrdersReportScreen extends StatefulWidget {
 }
 
 class _OrdersReportScreenState extends State<OrdersReportScreen> {
-  final ReportService _reportService = ReportService();
+  late final ReportService _reportService;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _reportService = ReportService(auth.ownerId);
+  }
+
   String _ordersPeriod = 'weekly';
 
   String _periodTitle(String period) {

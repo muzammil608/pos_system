@@ -19,11 +19,21 @@ class PosScreen extends StatefulWidget {
 }
 
 class _PosScreenState extends State<PosScreen> {
-  final ProductService _productService = ProductService();
-  final OrderService _orderService = OrderService();
+  late final ProductService _productService;
+  late final OrderService _orderService;
   final TextEditingController _searchController = TextEditingController();
 
   String _searchQuery = '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.ownerId.isNotEmpty) {
+      _productService = ProductService(auth.ownerId);
+      _orderService = OrderService(auth.ownerId);
+    }
+  }
 
   @override
   void dispose() {
@@ -259,11 +269,6 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  /// Returns number of columns based on screen width:
-  /// < 600px  → 2 (mobile)
-  /// < 900px  → 3 (tablet portrait)
-  /// < 1200px → 4 (tablet landscape / small web)
-  /// >= 1200px → 5 (desktop web)
   int _crossAxisCount(double width) {
     if (width >= 1200) return 5;
     if (width >= 900) return 4;

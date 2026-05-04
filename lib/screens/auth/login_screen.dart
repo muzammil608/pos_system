@@ -68,14 +68,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (result == null) {
+    if (result == null && auth.isRoleLoaded) {
       final userRole = auth.role;
+      if (userRole.isEmpty || userRole == 'cashier' && !auth.isCashier) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Role not configured properly. Please contact admin.')),
+        );
+        return;
+      }
       Provider.of<CartProvider>(context, listen: false).clear();
       _goToRoleScreen(userRole);
+    } else if (result == null && !auth.isRoleLoaded) {
+      // Wait and retry once
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _handleEmailLogin();
+      });
     } else {
       setState(() {
-        _emailError = result.emailError;
-        _passwordError = result.passwordError;
+        _emailError = result!.emailError;
+        _passwordError = result!.passwordError;
         _isLoading = false;
       });
     }
@@ -103,8 +116,21 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: const Color(0xFFD32F2F),
         ),
       );
+    } else if (!auth.isRoleLoaded) {
+      // Wait and retry once
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _handleGoogleLogin();
+      });
     } else {
       final userRole = auth.role;
+      if (userRole.isEmpty || userRole == 'cashier' && !auth.isCashier) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Role not configured properly. Please contact admin.')),
+        );
+        return;
+      }
       Provider.of<CartProvider>(context, listen: false).clear();
       _goToRoleScreen(userRole);
     }

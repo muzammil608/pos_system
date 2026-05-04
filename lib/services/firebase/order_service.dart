@@ -4,6 +4,9 @@ import 'firestore_service.dart';
 
 class OrderService {
   final FirestoreService _firestore = FirestoreService();
+  final String ownerId;
+
+  OrderService(this.ownerId);
 
   Future<DocumentReference> createOrder({
     required List<Map<String, dynamic>> items,
@@ -20,9 +23,10 @@ class OrderService {
       throw StateError('User not authenticated');
     }
 
-    // Global counter for order numbers
-    final counterRef =
-        FirebaseFirestore.instance.collection('counters').doc('order_number');
+    // ✅ Per-owner counter — prevents order number conflicts between admins
+    final counterRef = FirebaseFirestore.instance
+        .collection('counters')
+        .doc('order_number_$ownerId');
 
     final nextNumber = await FirebaseFirestore.instance
         .runTransaction<int>((transaction) async {
@@ -48,14 +52,17 @@ class OrderService {
       'tenderedAmount': tenderedAmount,
       'change': change,
       'orderNumber': nextNumber,
+      'ownerId': ownerId,
       'createdBy': user.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> deleteCompletedOrders() async {
-    final snapshot =
-        await _firestore.orders.where('status', isEqualTo: 'completed').get();
+    final snapshot = await _firestore.orders
+        .where('ownerId', isEqualTo: ownerId)
+        .where('status', isEqualTo: 'completed')
+        .get();
 
     final batch = FirebaseFirestore.instance.batch();
 
@@ -68,6 +75,7 @@ class OrderService {
 
   Stream<Map<String, int>> getTableOccupancy() {
     return _firestore.orders
+        .where('ownerId', isEqualTo: ownerId)
         .where('status', whereIn: ['pending', 'ready'])
         .snapshots()
         .map((snapshot) {
@@ -87,7 +95,10 @@ class OrderService {
   }
 
   Stream<QuerySnapshot> getOrders() {
-    return _firestore.orders.orderBy('createdAt', descending: true).snapshots();
+    return _firestore.orders
+        .where('ownerId', isEqualTo: ownerId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 
   Future<void> updateStatus(String id, String status) async {
@@ -95,8 +106,10 @@ class OrderService {
   }
 
   Future<void> completeReadyOrders() async {
-    final snapshot =
-        await _firestore.orders.where('status', isEqualTo: 'ready').get();
+    final snapshot = await _firestore.orders
+        .where('ownerId', isEqualTo: ownerId)
+        .where('status', isEqualTo: 'ready')
+        .get();
 
     for (var doc in snapshot.docs) {
       await doc.reference.update({'status': 'completed'});

@@ -14,11 +14,14 @@ class AuthProvider with ChangeNotifier {
   Map<String, dynamic>? userData;
   StreamSubscription<User?>? _authSub;
   bool isLoading = false;
+  bool _roleLoaded = false;
+  bool get isRoleLoaded => _roleLoaded;
 
-  // Flag to ignore auth state changes during employee creation
   bool _ignoringAuthChanges = false;
 
-  String get role => userData?['role'] ?? 'cashier';
+  String get role => userData?['role']?.toString() ?? 'cashier';
+  String? get currentUid => user?.uid;
+  String get ownerId => (userData?['adminId'] as String?) ?? currentUid ?? '';
   bool get isAdmin => role == 'admin';
   bool get isCashier => role == 'cashier';
   bool get isKitchen => role == 'kitchen';
@@ -29,7 +32,6 @@ class AuthProvider with ChangeNotifier {
     _loadUserRole(user);
 
     _authSub = _authService.authStateChanges.listen((updatedUser) {
-      // Skip processing if we are in the middle of creating an employee
       if (_ignoringAuthChanges) return;
 
       user = updatedUser;
@@ -43,6 +45,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _loadUserRole(User? firebaseUser) async {
+    _roleLoaded = false;
+    notifyListeners();
     if (firebaseUser == null) {
       userData = null;
       return;
@@ -61,9 +65,11 @@ class AuthProvider with ChangeNotifier {
         }
         userData = data;
       } else {
+        // New user - default as admin, self-owned
         userData = {
-          'role': 'cashier',
+          'role': 'admin',
           'name': firebaseUser.displayName ?? '',
+          'adminId': firebaseUser.uid,
           'isActive': true,
         };
         await _firestore
@@ -71,10 +77,13 @@ class AuthProvider with ChangeNotifier {
             .doc(firebaseUser.uid)
             .set(userData!);
       }
+      _roleLoaded = true;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading user role: $e');
-      userData = {'role': 'cashier'};
+      // Don't default role - keep null to prevent bad navigation
+      userData = null;
+      _roleLoaded = true;
       notifyListeners();
     }
   }
@@ -104,12 +113,12 @@ class AuthProvider with ChangeNotifier {
     }
 
     try {
-      // ✅ Use the returned user directly from auth_service login
       final loggedInUser =
           await _authService.login(trimmedEmail, trimmedPassword);
       await _loadUserRole(loggedInUser);
+      // Wait a tick for roleLoaded to update
+      await Future.delayed(const Duration(milliseconds: 100));
 
-      // ✅ Block deactivated (deleted) employees from logging in
       final isActive = userData?['isActive'] ?? true;
       if (!isActive) {
         await logout();
@@ -215,13 +224,10 @@ class AuthProvider with ChangeNotifier {
     }
 
     final adminUid = user!.uid;
-    final adminUserData =
-        Map<String, dynamic>.from(userData!); // snapshot admin data
+    final adminUserData = Map<String, dynamic>.from(userData!);
     FirebaseApp? secondaryApp;
 
     try {
-      // Pause the auth listener — any Firebase auth state changes triggered
-      // by the secondary app will be completely ignored.
       _ignoringAuthChanges = true;
 
       secondaryApp = await Firebase.initializeApp(
@@ -231,7 +237,6 @@ class AuthProvider with ChangeNotifier {
 
       final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
 
-      // Create employee on secondary instance — primary admin session untouched
       final credential = await secondaryAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -239,14 +244,14 @@ class AuthProvider with ChangeNotifier {
 
       final newUid = credential.user!.uid;
 
-      // Sign out secondary immediately
       await secondaryAuth.signOut();
 
-      // Write employee Firestore doc
+      // ✅ Add adminId for employee ownership
       await _firestore.collection('users').doc(newUid).set({
         'role': role,
         'name': name,
         'email': email,
+        'adminId': adminUid,
         'isActive': true,
         'createdBy': adminUid,
         'createdAt': FieldValue.serverTimestamp(),
@@ -270,14 +275,11 @@ class AuthProvider with ChangeNotifier {
         'error': 'Failed to create employee: $e',
       };
     } finally {
-      // Clean up secondary app
       await secondaryApp?.delete();
 
-      // Explicitly restore admin state in case anything changed
       user = _authService.currentUser;
       userData = adminUserData;
 
-      // Resume auth listener
       _ignoringAuthChanges = false;
 
       notifyListeners();
@@ -330,6 +332,7 @@ class AuthProvider with ChangeNotifier {
     if (!isAdmin) return Stream.value([]);
     return _firestore
         .collection('users')
+        .where('adminId', isEqualTo: currentUid)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .where((doc) {

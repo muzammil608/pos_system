@@ -8,6 +8,7 @@ class Product {
   final String category;
   final String? imageUrl;
   final int? iconCodePoint;
+  final String? ownerId;
 
   Product({
     required this.id,
@@ -16,6 +17,7 @@ class Product {
     required this.category,
     this.imageUrl,
     this.iconCodePoint,
+    this.ownerId,
   });
 
   /// Get the icon for this product (custom or default based on category)
@@ -59,6 +61,7 @@ class Product {
       category: category,
       imageUrl: data['imageUrl']?.toString(),
       iconCodePoint: parsedIconCodePoint,
+      ownerId: data['ownerId'],
     );
   }
 
@@ -69,6 +72,7 @@ class Product {
       'category': category,
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (iconCodePoint != null) 'iconCodePoint': iconCodePoint,
+      if (ownerId != null) 'ownerId': ownerId,
     };
   }
 }

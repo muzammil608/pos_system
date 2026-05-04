@@ -3,14 +3,18 @@ import '../services/firebase/product_service.dart';
 import '../models/product_model.dart';
 
 class ProductProvider extends ChangeNotifier {
-  final ProductService _service = ProductService();
+  late final ProductService _service;
   final List<Product> _products = [];
   bool _isLoading = false;
+  final String ownerId;
 
   List<Product> get products => _products;
   bool get isLoading => _isLoading;
-
   Stream<List<Product>> get productsStream => _service.streamProducts;
+
+  ProductProvider(String ownerId) : ownerId = ownerId {
+    _service = ProductService(ownerId);
+  }
 
   Future<String?> createProduct({
     required String name,

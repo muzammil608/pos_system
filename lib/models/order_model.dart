@@ -7,6 +7,7 @@ class Order {
   final DateTime createdAt;
   final String orderType;
   final String? tableNumber;
+  final String? ownerId;
 
   Order({
     required this.id,
@@ -17,6 +18,7 @@ class Order {
     required this.createdAt,
     required this.orderType,
     this.tableNumber,
+    this.ownerId,
   });
 
   factory Order.fromMap(Map<String, dynamic> data, String id) {
@@ -30,6 +32,7 @@ class Order {
           DateTime.parse(data['createdAt'] ?? DateTime.now().toIso8601String()),
       orderType: data['orderType']?.toString() ?? 'takeaway',
       tableNumber: data['tableNumber']?.toString(),
+      ownerId: data['ownerId'],
     );
   }
 
@@ -42,6 +45,7 @@ class Order {
       'orderType': orderType,
       'orderNumber': orderNumber,
       if (tableNumber != null) 'tableNumber': tableNumber,
+      if (ownerId != null) 'ownerId': ownerId,
     };
   }
 }

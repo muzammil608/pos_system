@@ -3,7 +3,10 @@ import '../services/firebase/order_service.dart';
 import 'cart_provider.dart';
 
 class OrderProvider with ChangeNotifier {
-  final OrderService _orderService = OrderService();
+  final OrderService _orderService;
+  final String ownerId;
+
+  OrderProvider(this.ownerId) : _orderService = OrderService(ownerId);
 
   Future<void> placeOrder({
     required CartProvider cart,

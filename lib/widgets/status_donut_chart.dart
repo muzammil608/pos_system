@@ -4,8 +4,9 @@ import '../services/firebase/report_service.dart';
 
 class StatusDonutChart extends StatelessWidget {
   final double size;
+  final String ownerId;
 
-  const StatusDonutChart({super.key, this.size = 250});
+  const StatusDonutChart({super.key, required this.ownerId, this.size = 250});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +15,7 @@ class StatusDonutChart extends StatelessWidget {
         SizedBox(
           height: size,
           child: StreamBuilder<Map<String, int>>(
-            stream: ReportService().getOrderStatusStats(),
+            stream: ReportService(ownerId).getOrderStatusStats(),
             builder: (context, snapshot) {
               final stats =
                   snapshot.data ?? {'pending': 0, 'ready': 0, 'completed': 0};

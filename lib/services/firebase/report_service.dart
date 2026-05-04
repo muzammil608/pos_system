@@ -2,9 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReportService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String ownerId;
 
-  CollectionReference<Map<String, dynamic>> get _orders =>
-      _db.collection('orders');
+  ReportService(this.ownerId);
+
+  Query<Map<String, dynamic>> get _orders =>
+      _db.collection('orders').where('ownerId', isEqualTo: ownerId);
 
   Stream<List<Map<String, dynamic>>> getDailySales() {
     return _orders.snapshots().map((snapshot) {

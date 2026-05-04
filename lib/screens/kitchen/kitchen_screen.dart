@@ -15,18 +15,29 @@ class KitchenScreen extends StatefulWidget {
 }
 
 class _KitchenScreenState extends State<KitchenScreen> {
-  final OrderService _service = OrderService();
-  final ReportService _reportService = ReportService();
+  late final OrderService _service;
+  late final ReportService _reportService;
 
   final Set<String> _hiddenOrderIds = <String>{};
   final List<String> _visibleOrderIds = [];
 
-  late final Stream<QuerySnapshot> _ordersStream;
+  Stream<QuerySnapshot>? _ordersStream;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.ownerId.isNotEmpty) {
+      _service = OrderService(auth.ownerId);
+      _reportService = ReportService(auth.ownerId);
+      _ordersStream = _service.getOrders();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _ordersStream = _service.getOrders();
+    // _ordersStream initialized in didChangeDependencies
   }
 
   @override

@@ -15,7 +15,14 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final OrderService _orderService = OrderService();
+  late final OrderService _orderService;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _orderService = OrderService(auth.ownerId);
+  }
 
   String _orderType = 'takeaway';
   String? _tableNumber;

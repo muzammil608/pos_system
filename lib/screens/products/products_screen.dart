@@ -347,7 +347,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(builder: (context, auth, child) {
+    return Consumer2<AuthProvider, ProductProvider>(
+        builder: (context, auth, productProvider, child) {
       if (!auth.isAdmin) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.pushReplacementNamed(context, '/pos');

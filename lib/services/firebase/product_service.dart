@@ -4,9 +4,15 @@ import 'firestore_service.dart';
 
 class ProductService {
   final FirestoreService _firestore = FirestoreService();
+  final String ownerId;
+
+  ProductService(this.ownerId);
 
   Stream<List<Product>> get streamProducts {
-    return _firestore.products.snapshots().map((snapshot) {
+    return _firestore.products
+        .where('ownerId', isEqualTo: ownerId)
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs
           .map((doc) => Product.fromMap(doc.data(), doc.id))
           .toList();
@@ -24,10 +30,10 @@ class ProductService {
         'name': name,
         'price': price,
         'category': category,
+        'ownerId': ownerId,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // Add icon code point if provided
       if (iconCodePoint != null) {
         productData['iconCodePoint'] = iconCodePoint;
       }
@@ -51,9 +57,9 @@ class ProductService {
         'name': name,
         'price': price,
         'category': category,
+        'ownerId': ownerId,
       };
 
-      // Add icon code point if provided
       if (iconCodePoint != null) {
         updateData['iconCodePoint'] = iconCodePoint;
       }

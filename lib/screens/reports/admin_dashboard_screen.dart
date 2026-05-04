@@ -14,7 +14,14 @@ class AdminDashboardScreen extends StatefulWidget {
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  final ReportService _reportService = ReportService();
+  late final ReportService _reportService;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _reportService = ReportService(auth.ownerId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +72,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     style:
                         TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                const StatusDonutChart(size: 280),
+                StatusDonutChart(ownerId: auth.ownerId, size: 280),
                 const SizedBox(height: 24),
 
                 /// Order Status Stats

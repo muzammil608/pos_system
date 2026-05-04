@@ -27,11 +27,18 @@ class _LandingScreenState extends State<LandingScreen> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    if (auth.isLoading) return;
+    if (auth.isLoading || !auth.isRoleLoaded) return;
 
     if (auth.user != null && auth.userData != null) {
       _navigated = true;
       final role = auth.role;
+      if (role.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Role not configured. Please contact admin.')),
+        );
+        return;
+      }
       switch (role) {
         case 'admin':
           Navigator.pushReplacementNamed(context, '/admin');
@@ -43,6 +50,9 @@ class _LandingScreenState extends State<LandingScreen> {
           Navigator.pushReplacementNamed(context, '/kitchen');
           break;
         default:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unknown role: $role. Defaulting to POS.')),
+          );
           Navigator.pushReplacementNamed(context, '/pos');
       }
     }
