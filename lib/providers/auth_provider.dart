@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show TimeoutException;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +28,14 @@ class AuthProvider with ChangeNotifier {
   bool get isKitchen => role == 'kitchen';
 
   AuthProvider() {
+    debugPrint('🔍 AUTH-PROVIDER-INIT: Starting...');
     _authService.ensurePersistence();
     user = _authService.currentUser;
+    debugPrint('🔍 AUTH-PROVIDER-CURRENT-USER: ${user?.uid ?? 'null'}');
     _loadUserRole(user);
 
     _authSub = _authService.authStateChanges.listen((updatedUser) {
+      debugPrint('🔍 AUTH-STATE-CHANGE: ${updatedUser?.uid ?? 'null'}');
       if (_ignoringAuthChanges) return;
 
       user = updatedUser;
@@ -42,47 +46,79 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     });
+    debugPrint('🔍 AUTH-PROVIDER-INIT: Complete');
   }
 
   Future<void> _loadUserRole(User? firebaseUser) async {
+    debugPrint('🔍 LOAD-ROLE-START: uid=${firebaseUser?.uid}');
+
     _roleLoaded = false;
     notifyListeners();
+
     if (firebaseUser == null) {
+      debugPrint('🔍 LOAD-ROLE-NULL: No user');
       userData = null;
+      _roleLoaded = true;
+      notifyListeners();
       return;
     }
 
     try {
-      final doc =
-          await _firestore.collection('users').doc(firebaseUser.uid).get();
+      // 10s timeout on Firestore read
+      final docSnap = await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get()
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        debugPrint('🔍 LOAD-ROLE-TIMEOUT: Firestore read timed out');
+        throw TimeoutException(
+            'Firestore timeout', const Duration(seconds: 10));
+      });
 
-      if (doc.exists) {
-        final data = doc.data()!;
+      debugPrint('🔍 LOAD-ROLE-FETCHED: doc.exists=${docSnap.exists}');
+
+      if (docSnap.exists) {
+        final data = docSnap.data()!;
         final isActive = data['isActive'] ?? true;
+        debugPrint('🔍 LOAD-ROLE-ACTIVE: isActive=$isActive');
+
         if (!isActive) {
+          debugPrint('🔍 LOAD-ROLE-INACTIVE: Logging out inactive user');
           await logout();
           return;
         }
         userData = data;
       } else {
         // New user - default as admin, self-owned
+        debugPrint('🔍 LOAD-ROLE-NEWUSER: Creating default admin profile');
         userData = {
           'role': 'admin',
-          'name': firebaseUser.displayName ?? '',
+          'name': firebaseUser.displayName ?? 'Admin',
           'adminId': firebaseUser.uid,
           'isActive': true,
         };
         await _firestore
             .collection('users')
             .doc(firebaseUser.uid)
-            .set(userData!);
+            .set(userData!, SetOptions(merge: true));
       }
+
+      debugPrint(
+          '🔍 LOAD-ROLE-SUCCESS: role=${userData!['role']}, ownerId=${userData!['adminId'] ?? firebaseUser.uid}');
       _roleLoaded = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading user role: $e');
-      // Don't default role - keep null to prevent bad navigation
-      userData = null;
+      debugPrint('🔍 LOAD-ROLE-ERROR: $e');
+      // Fallback: use current uid as ownerId, default role
+      userData = {
+        'role': 'cashier',
+        'adminId': firebaseUser.uid,
+        'isActive': true,
+        'name': firebaseUser.displayName ?? 'User',
+        '_fallback': true, // debug flag
+      };
+      debugPrint(
+          '🔍 LOAD-ROLE-FALLBACK: ownerId=${firebaseUser.uid}, role=cashier');
       _roleLoaded = true;
       notifyListeners();
     }
@@ -334,15 +370,25 @@ class AuthProvider with ChangeNotifier {
         .collection('users')
         .where('adminId', isEqualTo: currentUid)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .where((doc) {
+        .map((snapshot) => snapshot.docs.where((doc) {
               final data = doc.data();
               final role = data['role']?.toString() ?? '';
               final isActive = data['isActive'] ?? true;
               return (role == 'cashier' || role == 'kitchen') &&
                   isActive != false;
-            })
-            .map((doc) => {...doc.data(), 'id': doc.id})
-            .toList());
+            }).map((doc) {
+              final data = doc.data();
+
+              // ✅ Fix: ensure name is never null or empty string,
+              //    which would cause RangeError(index) in _avatarGradient
+              final rawName = (data['name']?.toString() ?? '').trim();
+              final safeName = rawName.isEmpty ? 'Unknown' : rawName;
+
+              return {
+                ...data,
+                'id': doc.id,
+                'name': safeName,
+              };
+            }).toList());
   }
 }

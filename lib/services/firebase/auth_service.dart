@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/material.dart' show debugPrint;
 
 import 'firestore_service.dart';
 
@@ -14,12 +15,17 @@ class AuthService {
 
   /// Ensure auth persistence is set once (LOCAL persistence survives app kill/restart)
   Future<void> ensurePersistence() async {
-    if (_persistenceInitialized) return;
+    if (_persistenceInitialized) {
+      debugPrint('🔍 PERSISTENCE-ALREADY: Skip');
+      return;
+    }
     try {
       await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
       _persistenceInitialized = true;
+      debugPrint('🔍 PERSISTENCE-SUCCESS: LOCAL persistence enabled');
     } catch (e) {
-      if (kDebugMode) print('Auth persistence set failed (already set?): $e');
+      debugPrint('🔍 PERSISTENCE-ERROR: $e - Continuing without persistence');
+      _persistenceInitialized = true; // Prevent retries
     }
   }
 

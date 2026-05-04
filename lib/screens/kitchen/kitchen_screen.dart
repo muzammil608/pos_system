@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +9,31 @@ import '../../services/firebase/order_service.dart';
 import '../../services/firebase/report_service.dart';
 import '../../widgets/app_navigation.dart';
 
+// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
+class CafeColors {
+  static const Color flame = Color(0xFFFF4D1C);
+  static const Color amber = Color(0xFFFFA724);
+  static const Color espresso = Color(0xFF1E0F00);
+  static const Color latte = Color(0xFFFFF3E8);
+  static const Color steam = Color(0xFFFFFAF5);
+  static const Color creme = Color(0xFFFFE4C4);
+  static const Color olive = Color(0xFF2D6A4F);
+  static const Color oliveLight = Color(0xFFD8F3DC);
+  static const Color charcoal = Color(0xFF2C2C2C);
+
+  static const LinearGradient headerGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient bottomBarGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF6B35)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 class KitchenScreen extends StatefulWidget {
   const KitchenScreen({super.key});
 
@@ -14,7 +41,8 @@ class KitchenScreen extends StatefulWidget {
   State<KitchenScreen> createState() => _KitchenScreenState();
 }
 
-class _KitchenScreenState extends State<KitchenScreen> {
+class _KitchenScreenState extends State<KitchenScreen>
+    with TickerProviderStateMixin {
   late final OrderService _service;
   late final ReportService _reportService;
 
@@ -22,6 +50,16 @@ class _KitchenScreenState extends State<KitchenScreen> {
   final List<String> _visibleOrderIds = [];
 
   Stream<QuerySnapshot>? _ordersStream;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
 
   @override
   void didChangeDependencies() {
@@ -35,9 +73,9 @@ class _KitchenScreenState extends State<KitchenScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    // _ordersStream initialized in didChangeDependencies
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   @override
@@ -46,17 +84,18 @@ class _KitchenScreenState extends State<KitchenScreen> {
       builder: (context, auth, child) {
         if (auth.user == null) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+                child: CircularProgressIndicator(color: CafeColors.flame)),
           );
         }
 
-        // Only admin and kitchen staff can access kitchen
         if (!auth.isAdmin && !auth.isKitchen) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.pushReplacementNamed(context, '/pos');
           });
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+                child: CircularProgressIndicator(color: CafeColors.flame)),
           );
         }
 
@@ -66,353 +105,676 @@ class _KitchenScreenState extends State<KitchenScreen> {
         final photoUrl = auth.user?.photoURL;
 
         return Scaffold(
-          backgroundColor: AppTheme.softBackground,
+          backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/kitchen'),
-          appBar: AppBar(
-            title: Row(
-              children: [
-                const Icon(Icons.kitchen, size: 28),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Kitchen Dashboard",
-                        style: TextStyle(fontSize: 20)),
-                    Text(
-                      userRole.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
+
+          // ─── AppBar ────────────────────────────────────────────────────────
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: CafeColors.headerGradient,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x33FF4D1C),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.kitchen_rounded,
+                          color: Colors.white70, size: 22),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Kitchen Dashboard',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 17,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          Text(
+                            userRole.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: AppDrawerAvatarButton(
+                        photoUrl: photoUrl,
+                        userName: userName,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            actions: [
-              AppDrawerAvatarButton(
-                photoUrl: photoUrl,
-                userName: userName,
               ),
-            ],
+            ),
           ),
+
+          // ─── Body ──────────────────────────────────────────────────────────
           body: Column(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.secondary],
-                  ),
-                ),
-                child: const SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
+              // ─── Stats Row ────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: StreamBuilder<Map<String, int>>(
+                  stream: _reportService.getOrderStatusStats(),
+                  builder: (context, snapshot) {
+                    final stats = snapshot.data ??
+                        {'pending': 0, 'ready': 0, 'completed': 0};
+                    return Row(
                       children: [
-                        Icon(Icons.restaurant_menu,
-                            color: Colors.white, size: 32),
-                        SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Kitchen Orders',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Live Status',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 14),
-                            ),
-                          ],
+                        Expanded(
+                          child: _MetricCard(
+                            title: 'Pending',
+                            value: '${stats['pending']}',
+                            icon: Icons.hourglass_top_rounded,
+                            color: const Color(0xFFFF4D1C),
+                            bgColor: const Color(0xFFFFEDE8),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _MetricCard(
+                            title: 'Ready',
+                            value: '${stats['ready']}',
+                            icon: Icons.check_circle_outline_rounded,
+                            color: CafeColors.olive,
+                            bgColor: CafeColors.oliveLight,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _MetricCard(
+                            title: 'Done',
+                            value: '${stats['completed']}',
+                            icon: Icons.task_alt_rounded,
+                            color: const Color(0xFF6B7280),
+                            bgColor: const Color(0xFFF3F4F6),
+                          ),
                         ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.only(bottom: 120),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: StreamBuilder<Map<String, int>>(
-                        stream: _reportService.getOrderStatusStats(),
-                        builder: (context, snapshot) {
-                          final stats = snapshot.data ??
-                              {'pending': 0, 'ready': 0, 'completed': 0};
 
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: buildMetricCard('Pending',
-                                    AppTheme.danger, '${stats['pending']}'),
-                              ),
-                              Expanded(
-                                child: buildMetricCard('Ready', AppTheme.accent,
-                                    '${stats['ready']}'),
-                              ),
-                              Expanded(
-                                child: buildMetricCard(
-                                    'Completed',
-                                    AppTheme.secondary,
-                                    '${stats['completed']}'),
-                              ),
-                            ],
-                          );
-                        },
+              const SizedBox(height: 12),
+
+              // ─── Section Label ────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [CafeColors.flame, CafeColors.amber],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream: _ordersStream,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                                  ConnectionState.waiting &&
-                              !snapshot.hasData) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-                          if (snapshot.hasError) {
-                            return Center(
-                                child: Text('Error: ${snapshot.error}'));
-                          }
-                          if (!snapshot.hasData ||
-                              snapshot.data!.docs.isEmpty) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(32),
-                                child: Text(
-                                  'No orders yet',
-                                  style: TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                ),
-                              ),
-                            );
-                          }
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Active Orders',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: CafeColors.charcoal,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: CafeColors.creme,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Live',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: CafeColors.flame,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                          final docs = snapshot.data!.docs.where((doc) {
+              const SizedBox(height: 10),
+
+              // ─── Orders List ──────────────────────────────────────────────
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _ordersStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
+                      return const Center(
+                        child:
+                            CircularProgressIndicator(color: CafeColors.flame),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+
+                    final docs = snapshot.hasData
+                        ? snapshot.data!.docs.where((doc) {
                             final data = doc.data() as Map<String, dynamic>;
                             final status =
                                 data['status']?.toString() ?? 'pending';
                             return !_hiddenOrderIds.contains(doc.id) &&
                                 (status == 'pending' || status == 'ready');
-                          }).toList();
+                          }).toList()
+                        : <QueryDocumentSnapshot>[];
 
-                          _visibleOrderIds.clear();
-                          for (final doc in docs) {
-                            _visibleOrderIds.add(doc.id);
-                          }
+                    _visibleOrderIds.clear();
+                    for (final doc in docs) {
+                      _visibleOrderIds.add(doc.id);
+                    }
 
-                          if (docs.isEmpty) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(32),
-                                child: Text(
-                                  'All caught up! No active orders.',
-                                  style: TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                ),
-                              ),
-                            );
-                          }
+                    if (docs.isEmpty) {
+                      return _emptyView();
+                    }
 
-                          return Column(
-                            children: docs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              final items = List<Map<String, dynamic>>.from(
-                                  data['items'] ?? []);
-                              final status =
-                                  data['status']?.toString() ?? 'pending';
-                              final orderNumber =
-                                  (data['orderNumber'] as num?)?.toInt() ?? 0;
-                              final tableNumber =
-                                  data['tableNumber']?.toString();
-                              final createdAt = data['createdAt'] as Timestamp?;
-                              final orderType =
-                                  data['orderType']?.toString() ?? 'takeaway';
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final doc = docs[index];
+                        final data = doc.data() as Map<String, dynamic>;
+                        final items = List<Map<String, dynamic>>.from(
+                            data['items'] ?? []);
+                        final status = data['status']?.toString() ?? 'pending';
+                        final orderNumber =
+                            (data['orderNumber'] as num?)?.toInt() ?? 0;
+                        final tableNumber = data['tableNumber']?.toString();
+                        final createdAt = data['createdAt'] as Timestamp?;
+                        final orderType =
+                            data['orderType']?.toString() ?? 'takeaway';
 
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Order #$orderNumber',
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: status == 'pending'
-                                                  ? Colors.orange
-                                                  : Colors.green,
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              status.toUpperCase(),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${orderType.toUpperCase()}${tableNumber != null ? ' - Table $tableNumber' : ''}',
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...items.map((item) {
-                                        final name =
-                                            item['name']?.toString() ?? 'Item';
-                                        final qty =
-                                            (item['qty'] as num?)?.toInt() ??
-                                                (item['quantity'] as num?)
-                                                    ?.toInt() ??
-                                                1;
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 2),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                '$qty x',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(child: Text(name)),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            _formatTime(createdAt?.toDate()),
-                                            style: TextStyle(
-                                              color: Colors.grey[500],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          // Kitchen staff can only mark ready
-                                          if (status == 'pending')
-                                            ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  _service.updateStatus(
-                                                      doc.id, 'ready'),
-                                              icon: const Icon(Icons.check,
-                                                  size: 16),
-                                              label: const Text('Mark Ready'),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.green,
-                                                foregroundColor: Colors.white,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                        return _KitchenOrderCard(
+                          docId: doc.id,
+                          orderNumber: orderNumber,
+                          status: status,
+                          orderType: orderType,
+                          tableNumber: tableNumber,
+                          items: items,
+                          createdAt: createdAt,
+                          onMarkReady: () =>
+                              _service.updateStatus(doc.id, 'ready'),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () {
-              setState(() {
-                for (final id in _visibleOrderIds) {
-                  _hiddenOrderIds.add(id);
-                }
-              });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Kitchen history removed from screen'),
+          // ─── FAB ───────────────────────────────────────────────────────────
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: CafeColors.flame.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              );
-            },
-            icon: const Icon(Icons.delete_sweep),
-            label: const Text('Delete History'),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  setState(() {
+                    for (final id in _visibleOrderIds) {
+                      _hiddenOrderIds.add(id);
+                    }
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Row(
+                        children: [
+                          Icon(Icons.delete_sweep_rounded,
+                              color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text('Kitchen history cleared'),
+                        ],
+                      ),
+                      backgroundColor: CafeColors.charcoal,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.delete_sweep_rounded,
+                          color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Clear History',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  Widget buildMetricCard(String title, Color color, String value) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget _emptyView() {
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.circle, color: color),
-          const SizedBox(height: 8),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textPrimary.withValues(alpha: 0.7))),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: CafeColors.creme,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.restaurant_menu_rounded,
+                size: 48, color: CafeColors.flame),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'All caught up!',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: CafeColors.charcoal,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'No active orders right now',
+            style: TextStyle(
+              fontSize: 13,
+              color: CafeColors.charcoal.withOpacity(0.5),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+// ─── Metric Card ───────────────────────────────────────────────────────────────
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: CafeColors.charcoal.withOpacity(0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Kitchen Order Card ────────────────────────────────────────────────────────
+class _KitchenOrderCard extends StatelessWidget {
+  final String docId;
+  final int orderNumber;
+  final String status;
+  final String orderType;
+  final String? tableNumber;
+  final List<Map<String, dynamic>> items;
+  final Timestamp? createdAt;
+  final VoidCallback onMarkReady;
+
+  const _KitchenOrderCard({
+    required this.docId,
+    required this.orderNumber,
+    required this.status,
+    required this.orderType,
+    this.tableNumber,
+    required this.items,
+    required this.createdAt,
+    required this.onMarkReady,
+  });
+
+  bool get isPending => status == 'pending';
 
   String _formatTime(DateTime? dateTime) {
-    if (dateTime == null) return '--:--:--';
-
+    if (dateTime == null) return '--:--';
     return '${dateTime.hour.toString().padLeft(2, '0')}:'
         '${dateTime.minute.toString().padLeft(2, '0')}:'
         '${dateTime.second.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = isPending ? CafeColors.flame : CafeColors.olive;
+    final statusBg =
+        isPending ? const Color(0xFFFFEDE8) : CafeColors.oliveLight;
+    final statusLabel = isPending ? 'PENDING' : 'READY';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: isPending
+            ? Border.all(color: CafeColors.flame.withOpacity(0.15), width: 1)
+            : Border.all(color: CafeColors.olive.withOpacity(0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ─── Card Header ─────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.05),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+            ),
+            child: Row(
+              children: [
+                // Order number badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: isPending
+                        ? CafeColors.headerGradient
+                        : const LinearGradient(
+                            colors: [Color(0xFF2D6A4F), Color(0xFF40916C)],
+                          ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '#$orderNumber',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        orderType.toUpperCase() +
+                            (tableNumber != null
+                                ? ' · Table $tableNumber'
+                                : ''),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: CafeColors.charcoal.withOpacity(0.6),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time_rounded,
+                              size: 12,
+                              color: CafeColors.charcoal.withOpacity(0.4)),
+                          const SizedBox(width: 3),
+                          Text(
+                            _formatTime(createdAt?.toDate()),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: CafeColors.charcoal.withOpacity(0.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Status chip
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ─── Items ───────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              children: items.map((item) {
+                final name = item['name']?.toString() ?? 'Item';
+                final qty = (item['qty'] as num?)?.toInt() ??
+                    (item['quantity'] as num?)?.toInt() ??
+                    1;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: isPending
+                              ? CafeColors.creme
+                              : CafeColors.oliveLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$qty',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: statusColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: CafeColors.charcoal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // ─── Action Row ───────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isPending)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2D6A4F), Color(0xFF40916C)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CafeColors.olive.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: onMarkReady,
+                      icon: const Icon(Icons.check_rounded,
+                          color: Colors.white, size: 16),
+                      label: const Text(
+                        'Mark Ready',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  )
+                else
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded,
+                          color: CafeColors.olive, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Ready for pickup',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: CafeColors.olive.withOpacity(0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,8 +1,34 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../widgets/app_navigation.dart';
+
+// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
+class CafeColors {
+  static const Color flame = Color(0xFFFF4D1C);
+  static const Color amber = Color(0xFFFFA724);
+  static const Color espresso = Color(0xFF1E0F00);
+  static const Color latte = Color(0xFFFFF3E8);
+  static const Color steam = Color(0xFFFFFAF5);
+  static const Color creme = Color(0xFFFFE4C4);
+  static const Color olive = Color(0xFF2D6A4F);
+  static const Color oliveLight = Color(0xFFD8F3DC);
+  static const Color charcoal = Color(0xFF2C2C2C);
+
+  static const LinearGradient headerGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient bottomBarGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF6B35)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
 
 class EmployeeManagerScreen extends StatefulWidget {
   const EmployeeManagerScreen({super.key});
@@ -29,6 +55,81 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     super.dispose();
   }
 
+  // ─── Role badge color ────────────────────────────────────────────────────
+  Color _roleColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'kitchen':
+        return CafeColors.olive;
+      case 'cashier':
+      default:
+        return CafeColors.flame;
+    }
+  }
+
+  Color _roleBgColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'kitchen':
+        return CafeColors.oliveLight;
+      case 'cashier':
+      default:
+        return CafeColors.creme;
+    }
+  }
+
+  // ─── Avatar gradient per name ────────────────────────────────────────────
+  LinearGradient _avatarGradient(String name) {
+    final gradients = [
+      const LinearGradient(colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)]),
+      const LinearGradient(colors: [Color(0xFFFFA724), Color(0xFFFFCC70)]),
+      const LinearGradient(colors: [Color(0xFF2D6A4F), Color(0xFF52B788)]),
+      const LinearGradient(colors: [Color(0xFF5C6BC0), Color(0xFF7986CB)]),
+      const LinearGradient(colors: [Color(0xFFE91E8C), Color(0xFFFF6EC7)]),
+    ];
+
+    // ✅ Fix: guard against empty name to prevent RangeError(index)
+    if (name.isEmpty) return gradients[0];
+
+    return gradients[name.codeUnitAt(0) % gradients.length];
+  }
+
+  // ─── Styled text field ───────────────────────────────────────────────────
+  Widget _styledField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      style: const TextStyle(fontSize: 14, color: CafeColors.charcoal),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: CafeColors.flame.withOpacity(0.8)),
+        prefixIcon: Icon(icon, color: CafeColors.flame, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: CafeColors.flame.withOpacity(0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: CafeColors.flame.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: CafeColors.flame, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+      ),
+    );
+  }
+
+  // ─── Create Employee Dialog ──────────────────────────────────────────────
   void _showCreateDialog(BuildContext context) {
     _nameController.clear();
     _emailController.clear();
@@ -40,144 +141,227 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Add Employee'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(),
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: CafeColors.headerGradient,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.person_add_rounded,
+                                color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Add Employee',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: CafeColors.charcoal,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 20),
+                      _styledField(
+                        controller: _nameController,
+                        label: 'Full Name',
+                        icon: Icons.person_outline,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 12),
+                      _styledField(
+                        controller: _emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedRole,
-                      decoration: const InputDecoration(
-                        labelText: 'Role',
-                        prefixIcon: Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 12),
+                      _styledField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        obscureText: true,
                       ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'cashier', child: Text('Cashier')),
-                        DropdownMenuItem(
-                            value: 'kitchen', child: Text('Kitchen')),
-                      ],
-                      onChanged: (value) {
-                        setDialogState(() {
-                          _selectedRole = value ?? 'cashier';
-                        });
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      // Role dropdown
+                      DropdownButtonFormField<String>(
+                        value: _selectedRole,
+                        decoration: InputDecoration(
+                          labelText: 'Role',
+                          labelStyle: TextStyle(
+                              color: CafeColors.flame.withOpacity(0.8)),
+                          prefixIcon: const Icon(Icons.badge_outlined,
+                              color: CafeColors.flame, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                                color: CafeColors.flame.withOpacity(0.2)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: CafeColors.flame, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 12),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'cashier', child: Text('Cashier')),
+                          DropdownMenuItem(
+                              value: 'kitchen', child: Text('Kitchen')),
+                        ],
+                        onChanged: (value) => setDialogState(
+                            () => _selectedRole = value ?? 'cashier'),
+                      ),
+                      const SizedBox(height: 24),
+                      // Action buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                side: BorderSide(
+                                    color: CafeColors.flame.withOpacity(0.4)),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('Cancel',
+                                  style: TextStyle(color: CafeColors.flame)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: CafeColors.headerGradient,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: ElevatedButton(
+                                onPressed: _isCreating
+                                    ? null
+                                    : () async {
+                                        final name =
+                                            _nameController.text.trim();
+                                        final email =
+                                            _emailController.text.trim();
+                                        final password =
+                                            _passwordController.text.trim();
+
+                                        if (name.isEmpty ||
+                                            email.isEmpty ||
+                                            password.isEmpty) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'Please fill all fields'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        if (password.length < 6) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                  'Password must be at least 6 characters'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        setDialogState(
+                                            () => _isCreating = true);
+
+                                        final auth = Provider.of<AuthProvider>(
+                                            context,
+                                            listen: false);
+                                        final result =
+                                            await auth.createEmployee(
+                                          email: email,
+                                          password: password,
+                                          name: name,
+                                          role: _selectedRole,
+                                        );
+
+                                        setDialogState(
+                                            () => _isCreating = false);
+                                        if (!dialogContext.mounted) return;
+                                        Navigator.pop(dialogContext);
+                                        if (!context.mounted) return;
+
+                                        final bool success =
+                                            result['success'] == true;
+                                        final String? errorMsg =
+                                            result['error']?.toString();
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              success
+                                                  ? 'Employee created successfully'
+                                                  : errorMsg ??
+                                                      'Failed to create employee',
+                                            ),
+                                            backgroundColor: success
+                                                ? CafeColors.olive
+                                                : Colors.red,
+                                          ),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14)),
+                                ),
+                                child: _isCreating
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white),
+                                      )
+                                    : const Text('Create',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: _isCreating
-                      ? null
-                      : () async {
-                          final name = _nameController.text.trim();
-                          final email = _emailController.text.trim();
-                          final password = _passwordController.text.trim();
-
-                          if (name.isEmpty ||
-                              email.isEmpty ||
-                              password.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please fill all fields'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          if (password.length < 6) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Password must be at least 6 characters'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setDialogState(() => _isCreating = true);
-
-                          final auth =
-                              Provider.of<AuthProvider>(context, listen: false);
-                          final result = await auth.createEmployee(
-                            email: email,
-                            password: password,
-                            name: name,
-                            role: _selectedRole,
-                          );
-
-                          setDialogState(() => _isCreating = false);
-
-                          if (!dialogContext.mounted) return;
-                          Navigator.pop(dialogContext);
-
-                          if (!context.mounted) return;
-
-                          final bool success = result['success'] == true;
-                          final String? errorMsg = result['error']?.toString();
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'Employee created successfully'
-                                    : errorMsg ?? 'Failed to create employee',
-                              ),
-                              backgroundColor:
-                                  success ? Colors.green : Colors.red,
-                            ),
-                          );
-                        },
-                  child: _isCreating
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Create'),
-                ),
-              ],
             );
           },
         );
@@ -185,43 +369,108 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     );
   }
 
+  // ─── Delete Confirmation Dialog ──────────────────────────────────────────
   void _confirmDelete(BuildContext context, String userId, String name) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Employee'),
-        content: Text('Are you sure you want to delete "$name"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              final success = await auth.deleteEmployee(userId);
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    success ? 'Employee deleted' : 'Failed to delete employee',
+      builder: (dialogContext) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEB),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.red, size: 22),
                   ),
-                  backgroundColor: success ? Colors.green : Colors.red,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete'),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Delete Employee',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: CafeColors.charcoal,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Are you sure you want to delete "$name"? This action cannot be undone.',
+                style: TextStyle(
+                    fontSize: 14,
+                    color: CafeColors.charcoal.withOpacity(0.7),
+                    height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                            color: CafeColors.flame.withOpacity(0.4)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(color: CafeColors.flame)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        final auth =
+                            Provider.of<AuthProvider>(context, listen: false);
+                        final success = await auth.deleteEmployee(userId);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success
+                                ? 'Employee deleted'
+                                : 'Failed to delete employee'),
+                            backgroundColor:
+                                success ? CafeColors.olive : Colors.red,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Delete',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
+  // ─── Edit Role Dialog ────────────────────────────────────────────────────
   void _showEditRoleDialog(
       BuildContext context, String userId, String currentRole, String name) {
     String selectedRole = currentRole;
@@ -231,51 +480,144 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('Change Role for $name'),
-              content: DropdownButtonFormField<String>(
-                value: selectedRole,
-                decoration: const InputDecoration(
-                  labelText: 'Role',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'cashier', child: Text('Cashier')),
-                  DropdownMenuItem(value: 'kitchen', child: Text('Kitchen')),
-                ],
-                onChanged: (value) {
-                  setDialogState(() {
-                    selectedRole = value ?? 'cashier';
-                  });
-                },
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(dialogContext);
-                    final auth =
-                        Provider.of<AuthProvider>(context, listen: false);
-                    final success =
-                        await auth.updateUserRole(userId, selectedRole);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Role updated successfully'
-                              : 'Failed to update role',
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: CafeColors.headerGradient,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.badge_outlined,
+                              color: Colors.white, size: 20),
                         ),
-                        backgroundColor: success ? Colors.green : Colors.red,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Change Role',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: CafeColors.charcoal,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      name,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: CafeColors.charcoal.withOpacity(0.5)),
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<String>(
+                      value: selectedRole,
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        labelStyle:
+                            TextStyle(color: CafeColors.flame.withOpacity(0.8)),
+                        prefixIcon: const Icon(Icons.badge_outlined,
+                            color: CafeColors.flame, size: 20),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                              color: CafeColors.flame.withOpacity(0.2)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: CafeColors.flame, width: 2),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 12),
                       ),
-                    );
-                  },
-                  child: const Text('Update'),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'cashier', child: Text('Cashier')),
+                        DropdownMenuItem(
+                            value: 'kitchen', child: Text('Kitchen')),
+                      ],
+                      onChanged: (value) => setDialogState(
+                          () => selectedRole = value ?? 'cashier'),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(
+                                  color: CafeColors.flame.withOpacity(0.4)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Cancel',
+                                style: TextStyle(color: CafeColors.flame)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: CafeColors.headerGradient,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                Navigator.pop(dialogContext);
+                                final auth = Provider.of<AuthProvider>(context,
+                                    listen: false);
+                                final success = await auth.updateUserRole(
+                                    userId, selectedRole);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(success
+                                        ? 'Role updated successfully'
+                                        : 'Failed to update role'),
+                                    backgroundColor:
+                                        success ? CafeColors.olive : Colors.red,
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                              child: const Text('Update',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         );
@@ -287,24 +629,76 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
+        // ─── Access Denied ─────────────────────────────────────────────────
         if (!auth.isAdmin) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Access Denied'),
-              backgroundColor: AppTheme.primary,
+            backgroundColor: CafeColors.latte,
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(64),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: CafeColors.headerGradient,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Color(0x33FF4D1C),
+                        blurRadius: 12,
+                        offset: Offset(0, 4))
+                  ],
+                ),
+                child: SafeArea(
+                  child: AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    iconTheme: const IconThemeData(color: Colors.white),
+                    title: const Text('Access Denied',
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ),
             ),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.admin_panel_settings,
-                      size: 64, color: Colors.red),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: const BoxDecoration(
+                        color: Color(0xFFFFEBEB), shape: BoxShape.circle),
+                    child: const Icon(Icons.admin_panel_settings,
+                        size: 52, color: Colors.red),
+                  ),
                   const SizedBox(height: 16),
-                  const Text('Admin Only', style: TextStyle(fontSize: 24)),
+                  const Text('Admin Only',
+                      style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: CafeColors.charcoal)),
                   const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Back'),
+                  Text('You do not have permission to view this page',
+                      style: TextStyle(
+                          color: CafeColors.charcoal.withOpacity(0.5),
+                          fontSize: 14)),
+                  const SizedBox(height: 24),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                        gradient: CafeColors.headerGradient,
+                        borderRadius: BorderRadius.circular(14)),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Go Back',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ),
                   ),
                 ],
               ),
@@ -317,211 +711,206 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
         final photoUrl = auth.user?.photoURL;
 
         return Scaffold(
+          backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/employees'),
-          appBar: AppBar(
-            title: const Text('Employee Manager'),
-            backgroundColor: AppTheme.primary,
-            foregroundColor: Colors.white,
-            actions: [
-              AppDrawerAvatarButton(
-                photoUrl: photoUrl,
-                userName: userName,
+          // ─── AppBar ───────────────────────────────────────────────────────
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(64),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: CafeColors.headerGradient,
+                boxShadow: [
+                  BoxShadow(
+                      color: Color(0x33FF4D1C),
+                      blurRadius: 12,
+                      offset: Offset(0, 4))
+                ],
               ),
-            ],
-          ),
-          body: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (v) =>
-                            setState(() => _searchQuery = v.toLowerCase()),
-                        decoration: InputDecoration(
-                          hintText: 'Search employees...',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide(
-                              color: AppTheme.secondary.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          focusedBorder: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(24)),
-                            borderSide:
-                                BorderSide(color: AppTheme.primary, width: 1.5),
-                          ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 0),
+              child: SafeArea(
+                child: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  iconTheme: const IconThemeData(color: Colors.white),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.people_rounded,
+                          color: Colors.white70, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Employee Manager',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          letterSpacing: 0.4,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppTheme.secondary.withValues(alpha: 0.25),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: IconButton(
-                        tooltip: 'Add Employee',
-                        onPressed: () => _showCreateDialog(context),
-                        icon: Icon(Icons.add, color: AppTheme.primary),
+                    ],
+                  ),
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: AppDrawerAvatarButton(
+                        photoUrl: photoUrl,
+                        userName: userName,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+            ),
+          ),
+          // ─── Body ─────────────────────────────────────────────────────────
+          body: Column(
+            children: [
+              // ─── Search bar + Add button ───────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: CafeColors.flame.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (v) =>
+                              setState(() => _searchQuery = v.toLowerCase()),
+                          style: const TextStyle(
+                              fontSize: 14, color: CafeColors.charcoal),
+                          decoration: InputDecoration(
+                            hintText: 'Search employees...',
+                            hintStyle: TextStyle(
+                                color: Colors.grey[400], fontSize: 14),
+                            prefixIcon: const Icon(Icons.search_rounded,
+                                color: CafeColors.flame, size: 20),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(Icons.close_rounded,
+                                        color: Colors.grey[500], size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Add employee button
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: CafeColors.headerGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: CafeColors.flame.withOpacity(0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        tooltip: 'Add Employee',
+                        onPressed: () => _showCreateDialog(context),
+                        icon: const Icon(Icons.person_add_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // ─── Employee List ─────────────────────────────────────────
               Expanded(
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: auth.getEmployees(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(
+                        child:
+                            CircularProgressIndicator(color: CafeColors.flame),
+                      );
                     }
                     if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));
                     }
 
                     final employees = snapshot.data ?? [];
-                    final filteredEmployees = employees.where((employee) {
-                      final name =
-                          employee['name']?.toString().toLowerCase() ?? '';
-                      final email =
-                          employee['email']?.toString().toLowerCase() ?? '';
-                      final role =
-                          employee['role']?.toString().toLowerCase() ?? '';
+                    final filtered = employees.where((e) {
+                      final name = e['name']?.toString().toLowerCase() ?? '';
+                      final email = e['email']?.toString().toLowerCase() ?? '';
+                      final role = e['role']?.toString().toLowerCase() ?? '';
                       return _searchQuery.isEmpty ||
                           name.contains(_searchQuery) ||
                           email.contains(_searchQuery) ||
                           role.contains(_searchQuery);
                     }).toList();
 
+                    // Empty states
                     if (employees.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.people_outline,
-                                size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No employees yet',
-                              style: TextStyle(
-                                  fontSize: 18, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
+                      return _emptyStateView(
+                        icon: Icons.people_outline_rounded,
+                        title: 'No employees yet',
+                        subtitle: 'Tap + to add your first employee',
                       );
                     }
-
-                    if (filteredEmployees.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.search_off,
-                                size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No employees match "$_searchQuery"',
-                              style: TextStyle(
-                                  fontSize: 18, color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
+                    if (filtered.isEmpty) {
+                      return _emptyStateView(
+                        icon: Icons.search_off_rounded,
+                        title: 'No results found',
+                        subtitle: 'No employees match "$_searchQuery"',
                       );
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredEmployees.length,
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                        final employee = filteredEmployees[index];
-                        final name = employee['name']?.toString() ?? 'Unknown';
+                        final employee = filtered[index];
+
+                        // ✅ Fix: safely resolve name, guarding against null
+                        //    AND empty string to prevent RangeError(index)
+                        final rawName =
+                            (employee['name']?.toString() ?? '').trim();
+                        final name = rawName.isEmpty ? 'Unknown' : rawName;
+
                         final email = employee['email']?.toString() ?? '';
                         final role = employee['role']?.toString() ?? 'cashier';
                         final userId = employee['id']?.toString() ?? '';
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  AppTheme.primary.withOpacity(0.12),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                style: TextStyle(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              '$email\nRole: ${role.toUpperCase()}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                            isThreeLine: true,
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit,
-                                      color: Colors.blue, size: 20),
-                                  onPressed: () => _showEditRoleDialog(
-                                    context,
-                                    userId,
-                                    role,
-                                    name,
-                                  ),
-                                  tooltip: 'Change Role',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.red, size: 20),
-                                  onPressed: () =>
-                                      _confirmDelete(context, userId, name),
-                                  tooltip: 'Delete',
-                                ),
-                              ],
-                            ),
-                          ),
+                        return _EmployeeCard(
+                          name: name,
+                          email: email,
+                          role: role,
+                          avatarGradient: _avatarGradient(name),
+                          roleColor: _roleColor(role),
+                          roleBgColor: _roleBgColor(role),
+                          onEdit: () =>
+                              _showEditRoleDialog(context, userId, role, name),
+                          onDelete: () => _confirmDelete(context, userId, name),
                         );
                       },
                     );
@@ -532,6 +921,203 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _emptyStateView({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: CafeColors.creme,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 52, color: CafeColors.flame),
+          ),
+          const SizedBox(height: 16),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: CafeColors.charcoal)),
+          const SizedBox(height: 4),
+          Text(subtitle,
+              style: TextStyle(
+                  fontSize: 13, color: CafeColors.charcoal.withOpacity(0.5))),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Employee Card Widget ──────────────────────────────────────────────────────
+class _EmployeeCard extends StatelessWidget {
+  final String name;
+  final String email;
+  final String role;
+  final LinearGradient avatarGradient;
+  final Color roleColor;
+  final Color roleBgColor;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _EmployeeCard({
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.avatarGradient,
+    required this.roleColor,
+    required this.roleBgColor,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: CafeColors.flame.withOpacity(0.07),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            // Gradient avatar
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                gradient: avatarGradient,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: CafeColors.charcoal,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    email,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: CafeColors.charcoal.withOpacity(0.5)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // Role badge
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: roleBgColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      role.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: roleColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Action buttons
+            Column(
+              children: [
+                _ActionIconButton(
+                  icon: Icons.edit_rounded,
+                  color: CafeColors.flame,
+                  bgColor: CafeColors.creme,
+                  tooltip: 'Change Role',
+                  onTap: onEdit,
+                ),
+                const SizedBox(height: 8),
+                _ActionIconButton(
+                  icon: Icons.delete_outline_rounded,
+                  color: Colors.red,
+                  bgColor: const Color(0xFFFFEBEB),
+                  tooltip: 'Delete',
+                  onTap: onDelete,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionIconButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color bgColor;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _ActionIconButton({
+    required this.icon,
+    required this.color,
+    required this.bgColor,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+      ),
     );
   }
 }

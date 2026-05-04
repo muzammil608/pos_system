@@ -1,10 +1,31 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 
+// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
+class CafeColors {
+  static const Color flame = Color(0xFFFF4D1C);
+  static const Color amber = Color(0xFFFFA724);
+  static const Color espresso = Color(0xFF1E0F00);
+  static const Color latte = Color(0xFFFFF3E8);
+  static const Color steam = Color(0xFFFFFAF5);
+  static const Color creme = Color(0xFFFFE4C4);
+  static const Color olive = Color(0xFF2D6A4F);
+  static const Color oliveLight = Color(0xFFD8F3DC);
+  static const Color charcoal = Color(0xFF2C2C2C);
+
+  static const LinearGradient headerGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+// ─── User Avatar ───────────────────────────────────────────────────────────────
 class AppUserAvatar extends StatelessWidget {
   const AppUserAvatar({
     super.key,
@@ -31,7 +52,7 @@ class AppUserAvatar extends StatelessWidget {
     if (resolvedUrl != null) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor: AppTheme.primary,
+        backgroundColor: CafeColors.flame,
         child: ClipOval(
           child: CachedNetworkImage(
             imageUrl: resolvedUrl,
@@ -61,6 +82,7 @@ class AppUserAvatar extends StatelessWidget {
   }
 }
 
+// ─── AppBar Avatar Button ──────────────────────────────────────────────────────
 class AppDrawerAvatarButton extends StatelessWidget {
   const AppDrawerAvatarButton({
     super.key,
@@ -78,11 +100,24 @@ class AppDrawerAvatarButton extends StatelessWidget {
         padding: const EdgeInsets.only(right: 12),
         child: GestureDetector(
           onTap: () => Scaffold.of(builderContext).openDrawer(),
-          child: AppUserAvatar(
-            photoUrl: photoUrl,
-            userName: userName,
-            radius: 18,
-            fontSize: 14,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white54, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: AppUserAvatar(
+              photoUrl: photoUrl,
+              userName: userName,
+              radius: 18,
+              fontSize: 14,
+            ),
           ),
         ),
       ),
@@ -90,6 +125,7 @@ class AppDrawerAvatarButton extends StatelessWidget {
   }
 }
 
+// ─── Navigation Drawer ─────────────────────────────────────────────────────────
 class AppNavigationDrawer extends StatelessWidget {
   const AppNavigationDrawer({
     super.key,
@@ -100,6 +136,27 @@ class AppNavigationDrawer extends StatelessWidget {
   final AuthProvider auth;
   final String currentRoute;
 
+  // Role badge colors
+  Color _roleBgColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return CafeColors.creme;
+      case 'kitchen':
+        return CafeColors.oliveLight;
+      default:
+        return CafeColors.creme;
+    }
+  }
+
+  Color _roleTextColor(String role) {
+    switch (role.toLowerCase()) {
+      case 'kitchen':
+        return CafeColors.olive;
+      default:
+        return CafeColors.flame;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = auth.user;
@@ -109,55 +166,60 @@ class AppNavigationDrawer extends StatelessWidget {
     final photoUrl = user?.photoURL;
 
     return Drawer(
+      backgroundColor: CafeColors.steam,
       child: Column(
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.primary, AppTheme.secondary],
-              ),
+          // ─── Drawer Header ───────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 52, 20, 24),
+            decoration: const BoxDecoration(
+              gradient: CafeColors.headerGradient,
             ),
             child: Row(
               children: [
+                // Logo
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(35),
+                  child: ClipOval(
                     child: Image.asset(
                       'assets/images/logo.png',
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'POS System',
+                      'Orion POS',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
                       ),
                     ),
                     Text(
                       'Restaurant POS',
                       style: TextStyle(
                         color: Colors.white70,
-                        fontSize: 14,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -165,48 +227,50 @@ class AppNavigationDrawer extends StatelessWidget {
               ],
             ),
           ),
+
+          // ─── Nav Items ───────────────────────────────────────────────────
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               children: [
                 if (auth.isAdmin || auth.isCashier)
                   _DrawerItem(
-                    icon: Icons.point_of_sale,
-                    title: 'POS',
+                    icon: Icons.storefront_rounded,
+                    title: 'Order Station',
                     route: '/pos',
                     currentRoute: currentRoute,
                   ),
                 if (auth.isAdmin)
                   _DrawerItem(
-                    icon: Icons.analytics,
+                    icon: Icons.analytics_rounded,
                     title: 'Admin Dashboard',
                     route: '/admin',
                     currentRoute: currentRoute,
                   ),
                 if (auth.isAdmin)
                   _DrawerItem(
-                    icon: Icons.receipt_long,
+                    icon: Icons.receipt_long_rounded,
                     title: 'Orders Report',
                     route: '/orders',
                     currentRoute: currentRoute,
                   ),
                 if (auth.isAdmin)
                   _DrawerItem(
-                    icon: Icons.inventory_2,
+                    icon: Icons.inventory_2_rounded,
                     title: 'Products',
                     route: '/products',
                     currentRoute: currentRoute,
                   ),
                 if (auth.isAdmin)
                   _DrawerItem(
-                    icon: Icons.people,
+                    icon: Icons.people_rounded,
                     title: 'Employee Manager',
                     route: '/employees',
                     currentRoute: currentRoute,
                   ),
                 if (auth.isAdmin || auth.isKitchen)
                   _DrawerItem(
-                    icon: Icons.kitchen,
+                    icon: Icons.kitchen_rounded,
                     title: 'Kitchen',
                     route: '/kitchen',
                     currentRoute: currentRoute,
@@ -214,97 +278,123 @@ class AppNavigationDrawer extends StatelessWidget {
               ],
             ),
           ),
+
+          // ─── User Footer ─────────────────────────────────────────────────
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            margin: const EdgeInsets.only(top: 8),
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.20),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
+                  color: CafeColors.flame.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppUserAvatar(
-                  photoUrl: photoUrl,
-                  userName: userName,
-                  radius: 28,
-                  fontSize: 22,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  userName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  userEmail,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                    fontFamily: 'monospace',
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  auth.role.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await Provider.of<AuthProvider>(
-                          context,
-                          listen: false,
-                        ).logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil(
-                            '/login',
-                            (route) => false,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                // Avatar + info row
+                Row(
+                  children: [
+                    AppUserAvatar(
+                      photoUrl: photoUrl,
+                      userName: userName,
+                      radius: 24,
+                      fontSize: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: CafeColors.charcoal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            userEmail,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: CafeColors.charcoal.withOpacity(0.45),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Role chip
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _roleBgColor(auth.role),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        auth.role.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: _roleTextColor(auth.role),
                         ),
                       ),
-                      icon: const Icon(Icons.logout, size: 20),
-                      label: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Logout button
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF3B3B), Color(0xFFFF6B6B)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await Provider.of<AuthProvider>(context, listen: false)
+                          .logout();
+                      if (context.mounted) {
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/login',
+                          (route) => false,
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      minimumSize: const Size(double.infinity, 46),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.logout_rounded,
+                        color: Colors.white, size: 18),
+                    label: const Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -318,6 +408,7 @@ class AppNavigationDrawer extends StatelessWidget {
   }
 }
 
+// ─── Drawer Item ───────────────────────────────────────────────────────────────
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.icon,
@@ -335,22 +426,61 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final selected = route == currentRoute;
 
-    return ListTile(
-      selected: selected,
-      selectedColor: AppTheme.primary,
-      selectedTileColor: AppTheme.primary.withOpacity(0.16),
-      leading: Icon(icon),
-      title: Text(title),
-      onTap: () {
-        Navigator.pop(context);
-        if (!selected) {
-          Navigator.pushNamed(context, route);
-        }
-      },
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        gradient: selected ? CafeColors.headerGradient : null,
+        color: selected ? null : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: CafeColors.flame.withOpacity(0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                )
+              ]
+            : null,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        leading: Icon(
+          icon,
+          color: selected ? Colors.white : CafeColors.charcoal.withOpacity(0.5),
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color:
+                selected ? Colors.white : CafeColors.charcoal.withOpacity(0.75),
+          ),
+        ),
+        trailing: selected
+            ? Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              )
+            : null,
+        onTap: () {
+          Navigator.pop(context);
+          if (!selected) {
+            Navigator.pushNamed(context, route);
+          }
+        },
+      ),
     );
   }
 }
 
+// ─── Initial Avatar ────────────────────────────────────────────────────────────
 class _InitialAvatar extends StatelessWidget {
   const _InitialAvatar({
     required this.userName,
@@ -367,11 +497,9 @@ class _InitialAvatar extends StatelessWidget {
     return Container(
       width: radius * 2,
       height: radius * 2,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [AppTheme.primary, AppTheme.secondary],
-        ),
+        gradient: CafeColors.headerGradient,
       ),
       child: Center(
         child: Text(
@@ -379,7 +507,7 @@ class _InitialAvatar extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontSize: fontSize,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
