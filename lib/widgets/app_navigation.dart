@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 
-// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
 class CafeColors {
   static const Color flame = Color(0xFFFF4D1C);
   static const Color amber = Color(0xFFFFA724);
@@ -25,7 +24,6 @@ class CafeColors {
   );
 }
 
-// ─── User Avatar ───────────────────────────────────────────────────────────────
 class AppUserAvatar extends StatelessWidget {
   const AppUserAvatar({
     super.key,
@@ -82,7 +80,6 @@ class AppUserAvatar extends StatelessWidget {
   }
 }
 
-// ─── AppBar Avatar Button ──────────────────────────────────────────────────────
 class AppDrawerAvatarButton extends StatelessWidget {
   const AppDrawerAvatarButton({
     super.key,
@@ -125,7 +122,6 @@ class AppDrawerAvatarButton extends StatelessWidget {
   }
 }
 
-// ─── Navigation Drawer ─────────────────────────────────────────────────────────
 class AppNavigationDrawer extends StatelessWidget {
   const AppNavigationDrawer({
     super.key,
@@ -169,7 +165,6 @@ class AppNavigationDrawer extends StatelessWidget {
       backgroundColor: CafeColors.steam,
       child: Column(
         children: [
-          // ─── Drawer Header ───────────────────────────────────────────────
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 52, 20, 24),
@@ -227,8 +222,6 @@ class AppNavigationDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // ─── Nav Items ───────────────────────────────────────────────────
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -278,8 +271,6 @@ class AppNavigationDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // ─── User Footer ─────────────────────────────────────────────────
           Container(
             width: double.infinity,
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
@@ -408,7 +399,6 @@ class AppNavigationDrawer extends StatelessWidget {
   }
 }
 
-// ─── Drawer Item ───────────────────────────────────────────────────────────────
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.icon,
@@ -480,7 +470,6 @@ class _DrawerItem extends StatelessWidget {
   }
 }
 
-// ─── Initial Avatar ────────────────────────────────────────────────────────────
 class _InitialAvatar extends StatelessWidget {
   const _InitialAvatar({
     required this.userName,

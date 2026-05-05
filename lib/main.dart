@@ -35,7 +35,6 @@ class MyApp extends StatelessWidget {
           debugPrint(
               '🔍 MAIN: roleLoaded=${auth.isRoleLoaded}, user=${auth.user?.uid}');
 
-          // 1. LOADING STATE
           if (!auth.isRoleLoaded) {
             return const MaterialApp(
               debugShowCheckedModeBanner: false,
@@ -45,7 +44,6 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // 2. NOT LOGGED IN → show screen (NO NAVIGATOR)
           if (auth.user == null) {
             return const MaterialApp(
               debugShowCheckedModeBanner: false,
@@ -53,7 +51,6 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          // 3. LOGGED IN → inject dependent providers
           return MultiProvider(
             providers: [
               ChangeNotifierProvider(

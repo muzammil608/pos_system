@@ -28,14 +28,14 @@ class AuthProvider with ChangeNotifier {
   bool get isKitchen => role == 'kitchen';
 
   AuthProvider() {
-    debugPrint('🔍 AUTH-PROVIDER-INIT: Starting...');
+    debugPrint('AUTH-PROVIDER-INIT: Starting...');
     _authService.ensurePersistence();
     user = _authService.currentUser;
-    debugPrint('🔍 AUTH-PROVIDER-CURRENT-USER: ${user?.uid ?? 'null'}');
+    debugPrint('AUTH-PROVIDER-CURRENT-USER: ${user?.uid ?? 'null'}');
     _loadUserRole(user);
 
     _authSub = _authService.authStateChanges.listen((updatedUser) {
-      debugPrint('🔍 AUTH-STATE-CHANGE: ${updatedUser?.uid ?? 'null'}');
+      debugPrint('AUTH-STATE-CHANGE: ${updatedUser?.uid ?? 'null'}');
       if (_ignoringAuthChanges) return;
 
       user = updatedUser;
@@ -46,17 +46,17 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     });
-    debugPrint('🔍 AUTH-PROVIDER-INIT: Complete');
+    debugPrint('AUTH-PROVIDER-INIT: Complete');
   }
 
   Future<void> _loadUserRole(User? firebaseUser) async {
-    debugPrint('🔍 LOAD-ROLE-START: uid=${firebaseUser?.uid}');
+    debugPrint('LOAD-ROLE-START: uid=${firebaseUser?.uid}');
 
     _roleLoaded = false;
     notifyListeners();
 
     if (firebaseUser == null) {
-      debugPrint('🔍 LOAD-ROLE-NULL: No user');
+      debugPrint(' LOAD-ROLE-NULL: No user');
       userData = null;
       _roleLoaded = true;
       notifyListeners();
@@ -70,27 +70,27 @@ class AuthProvider with ChangeNotifier {
           .doc(firebaseUser.uid)
           .get()
           .timeout(const Duration(seconds: 10), onTimeout: () {
-        debugPrint('🔍 LOAD-ROLE-TIMEOUT: Firestore read timed out');
+        debugPrint('LOAD-ROLE-TIMEOUT: Firestore read timed out');
         throw TimeoutException(
             'Firestore timeout', const Duration(seconds: 10));
       });
 
-      debugPrint('🔍 LOAD-ROLE-FETCHED: doc.exists=${docSnap.exists}');
+      debugPrint('LOAD-ROLE-FETCHED: doc.exists=${docSnap.exists}');
 
       if (docSnap.exists) {
         final data = docSnap.data()!;
         final isActive = data['isActive'] ?? true;
-        debugPrint('🔍 LOAD-ROLE-ACTIVE: isActive=$isActive');
+        debugPrint('LOAD-ROLE-ACTIVE: isActive=$isActive');
 
         if (!isActive) {
-          debugPrint('🔍 LOAD-ROLE-INACTIVE: Logging out inactive user');
+          debugPrint('LOAD-ROLE-INACTIVE: Logging out inactive user');
           await logout();
           return;
         }
         userData = data;
       } else {
         // New user - default as admin, self-owned
-        debugPrint('🔍 LOAD-ROLE-NEWUSER: Creating default admin profile');
+        debugPrint('LOAD-ROLE-NEWUSER: Creating default admin profile');
         userData = {
           'role': 'admin',
           'name': firebaseUser.displayName ?? 'Admin',
@@ -104,12 +104,11 @@ class AuthProvider with ChangeNotifier {
       }
 
       debugPrint(
-          '🔍 LOAD-ROLE-SUCCESS: role=${userData!['role']}, ownerId=${userData!['adminId'] ?? firebaseUser.uid}');
+          'LOAD-ROLE-SUCCESS: role=${userData!['role']}, ownerId=${userData!['adminId'] ?? firebaseUser.uid}');
       _roleLoaded = true;
       notifyListeners();
     } catch (e) {
-      debugPrint('🔍 LOAD-ROLE-ERROR: $e');
-      // Fallback: use current uid as ownerId, default role
+      debugPrint('LOAD-ROLE-ERROR: $e');
       userData = {
         'role': 'cashier',
         'adminId': firebaseUser.uid,
@@ -118,7 +117,7 @@ class AuthProvider with ChangeNotifier {
         '_fallback': true, // debug flag
       };
       debugPrint(
-          '🔍 LOAD-ROLE-FALLBACK: ownerId=${firebaseUser.uid}, role=cashier');
+          'LOAD-ROLE-FALLBACK: ownerId=${firebaseUser.uid}, role=cashier');
       _roleLoaded = true;
       notifyListeners();
     }

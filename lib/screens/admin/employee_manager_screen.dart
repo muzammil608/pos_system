@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_navigation.dart';
 
-// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
 class CafeColors {
   static const Color flame = Color(0xFFFF4D1C);
   static const Color amber = Color(0xFFFFA724);
@@ -55,7 +54,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     super.dispose();
   }
 
-  // ─── Role badge color ────────────────────────────────────────────────────
   Color _roleColor(String role) {
     switch (role.toLowerCase()) {
       case 'kitchen':
@@ -76,7 +74,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     }
   }
 
-  // ─── Avatar gradient per name ────────────────────────────────────────────
   LinearGradient _avatarGradient(String name) {
     final gradients = [
       const LinearGradient(colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)]),
@@ -86,13 +83,11 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
       const LinearGradient(colors: [Color(0xFFE91E8C), Color(0xFFFF6EC7)]),
     ];
 
-    // ✅ Fix: guard against empty name to prevent RangeError(index)
     if (name.isEmpty) return gradients[0];
 
     return gradients[name.codeUnitAt(0) % gradients.length];
   }
 
-  // ─── Styled text field ───────────────────────────────────────────────────
   Widget _styledField({
     required TextEditingController controller,
     required String label,
@@ -129,7 +124,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     );
   }
 
-  // ─── Create Employee Dialog ──────────────────────────────────────────────
   void _showCreateDialog(BuildContext context) {
     _nameController.clear();
     _emailController.clear();
@@ -369,7 +363,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     );
   }
 
-  // ─── Delete Confirmation Dialog ──────────────────────────────────────────
   void _confirmDelete(BuildContext context, String userId, String name) {
     showDialog(
       context: context,
@@ -470,7 +463,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
     );
   }
 
-  // ─── Edit Role Dialog ────────────────────────────────────────────────────
   void _showEditRoleDialog(
       BuildContext context, String userId, String currentRole, String name) {
     String selectedRole = currentRole;
@@ -629,7 +621,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
-        // ─── Access Denied ─────────────────────────────────────────────────
         if (!auth.isAdmin) {
           return Scaffold(
             backgroundColor: CafeColors.latte,
@@ -713,7 +704,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
         return Scaffold(
           backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/employees'),
-          // ─── AppBar ───────────────────────────────────────────────────────
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(64),
             child: Container(
@@ -760,10 +750,8 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
               ),
             ),
           ),
-          // ─── Body ─────────────────────────────────────────────────────────
           body: Column(
             children: [
-              // ─── Search bar + Add button ───────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                 child: Row(
@@ -842,8 +830,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // ─── Employee List ─────────────────────────────────────────
               Expanded(
                 child: StreamBuilder<List<Map<String, dynamic>>>(
                   stream: auth.getEmployees(),
@@ -891,8 +877,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
                       itemBuilder: (context, index) {
                         final employee = filtered[index];
 
-                        // ✅ Fix: safely resolve name, guarding against null
-                        //    AND empty string to prevent RangeError(index)
                         final rawName =
                             (employee['name']?.toString() ?? '').trim();
                         final name = rawName.isEmpty ? 'Unknown' : rawName;
@@ -957,7 +941,6 @@ class _EmployeeManagerScreenState extends State<EmployeeManagerScreen> {
   }
 }
 
-// ─── Employee Card Widget ──────────────────────────────────────────────────────
 class _EmployeeCard extends StatelessWidget {
   final String name;
   final String email;

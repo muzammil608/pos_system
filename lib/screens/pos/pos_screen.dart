@@ -1,8 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_theme.dart';
+// import '../../core/theme/app_theme.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
@@ -11,7 +13,6 @@ import '../../services/firebase/product_service.dart';
 import '../../widgets/app_navigation.dart';
 import '../../widgets/receipt_dialog.dart';
 
-// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
 class CafeColors {
   static const Color flame = Color(0xFFFF4D1C); // primary accent
   static const Color amber = Color(0xFFFFA724); // secondary warm
@@ -225,50 +226,100 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return Container(
-          height: MediaQuery.of(sheetContext).size.height * 0.78,
+          height: MediaQuery.of(sheetContext).size.height * 0.85,
           decoration: const BoxDecoration(
-            color: CafeColors.steam,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            color: CafeColors.latte,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: SafeArea(
             child: Column(
               children: [
-                // drag handle
                 Container(
-                  margin: const EdgeInsets.only(top: 10, bottom: 4),
-                  width: 40,
+                  margin: const EdgeInsets.only(top: 10, bottom: 2),
+                  width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: CafeColors.flame.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: CafeColors.headerGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CafeColors.flame.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: CafeColors.oliveLight,
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.check_circle_outline_rounded,
-                            color: CafeColors.olive, size: 22),
+                            color: Colors.white, size: 22),
                       ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Ready to Collect',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: CafeColors.charcoal,
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ready to Collect',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            Text(
+                              'Tap Print & Complete to close order',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      StreamBuilder(
+                        stream: _orderService?.getOrders(),
+                        builder: (context, snapshot) {
+                          final count = _readyOrderCount(snapshot);
+                          if (count == 0) return const SizedBox.shrink();
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: CafeColors.flame,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                const SizedBox(height: 14),
                 Expanded(
                   child: StreamBuilder(
                     stream: _orderService?.getOrders(),
@@ -290,21 +341,21 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
                       }).toList();
 
                       readyOrders.sort((a, b) {
-                        final aData = a.data() as Map<String, dynamic>;
-                        final bData = b.data() as Map<String, dynamic>;
-                        final aMs = (aData['createdAt'] as Timestamp?)
-                                ?.millisecondsSinceEpoch ??
-                            0;
-                        final bMs = (bData['createdAt'] as Timestamp?)
-                                ?.millisecondsSinceEpoch ??
-                            0;
+                        final aMs =
+                            ((a.data() as Map)['createdAt'] as Timestamp?)
+                                    ?.millisecondsSinceEpoch ??
+                                0;
+                        final bMs =
+                            ((b.data() as Map)['createdAt'] as Timestamp?)
+                                    ?.millisecondsSinceEpoch ??
+                                0;
                         return bMs.compareTo(aMs);
                       });
 
                       if (readyOrders.isEmpty) return _emptyOrdersView();
 
                       return ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                         itemCount: readyOrders.length,
                         itemBuilder: (context, index) {
                           final order = readyOrders[index];
@@ -328,6 +379,7 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
                             customerName: customerName,
                             items: items,
                             total: (data['total'] as num?)?.toDouble() ?? 0,
+                            index: index,
                             onComplete: () async {
                               Navigator.pop(sheetContext);
                               await _orderService?.updateStatus(
@@ -454,7 +506,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
         return Scaffold(
           backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/pos'),
-          // ─── AppBar ───────────────────────────────────────────────────────
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(64),
             child: Container(
@@ -555,7 +606,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          // ─── Body ─────────────────────────────────────────────────────────
           body: StreamBuilder<List<Product>>(
             stream: _productService?.streamProducts ??
                 Stream<List<Product>>.value([]),
@@ -574,7 +624,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
 
               return Column(
                 children: [
-                  // ─── Search bar ──────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: Container(
@@ -624,8 +673,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 10),
-
-                  // ─── Category chips ──────────────────────────────────────
                   if (allProducts.isNotEmpty)
                     SizedBox(
                       height: 36,
@@ -684,8 +731,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
                       ),
                     ),
                   const SizedBox(height: 10),
-
-                  // ─── Product Grid ─────────────────────────────────────────
                   Expanded(
                     child: () {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -760,8 +805,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
                       );
                     }(),
                   ),
-
-                  // ─── Bottom Action Bar ────────────────────────────────────
                   Container(
                     decoration: const BoxDecoration(
                       gradient: CafeColors.bottomBarGradient,
@@ -822,7 +865,6 @@ class _PosScreenState extends State<PosScreen> with TickerProviderStateMixin {
   }
 }
 
-// ─── Product Card Widget ───────────────────────────────────────────────────────
 class _ProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback onTap;
@@ -860,10 +902,12 @@ class _ProductCardState extends State<_ProductCard>
   String _categoryEmoji(String category) {
     final c = category.toLowerCase();
     if (c.contains('coffee') || c.contains('hot drink')) return '☕';
-    if (c.contains('cold') || c.contains('drink') || c.contains('juice'))
+    if (c.contains('cold') || c.contains('drink') || c.contains('juice')) {
       return '🧃';
-    if (c.contains('food') || c.contains('meal') || c.contains('snack'))
+    }
+    if (c.contains('food') || c.contains('meal') || c.contains('snack')) {
       return '🍽️';
+    }
     if (c.contains('dessert') || c.contains('sweet')) return '🍰';
     if (c.contains('sandwich') || c.contains('burger')) return '🥪';
     if (c.contains('pizza')) return '🍕';
@@ -871,7 +915,6 @@ class _ProductCardState extends State<_ProductCard>
     return '🍴';
   }
 
-  // Pick a gradient per first letter for visual variety
   LinearGradient _cardAccentGradient(String name) {
     final gradients = [
       const LinearGradient(colors: [Color(0xFFFFE0CC), Color(0xFFFFCDB5)]),
@@ -992,7 +1035,6 @@ class _ProductCardState extends State<_ProductCard>
   }
 }
 
-// ─── Bottom Bar Button ─────────────────────────────────────────────────────────
 class _BottomBarButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData icon;
@@ -1070,13 +1112,13 @@ class _BottomBarButton extends StatelessWidget {
   }
 }
 
-// ─── Ready Order Card ──────────────────────────────────────────────────────────
 class _ReadyOrderCard extends StatelessWidget {
   final String orderLabel;
   final String orderType;
   final String? customerName;
   final List<Map<String, dynamic>> items;
   final double total;
+  final int index;
   final VoidCallback onComplete;
 
   const _ReadyOrderCard({
@@ -1085,170 +1127,278 @@ class _ReadyOrderCard extends StatelessWidget {
     this.customerName,
     required this.items,
     required this.total,
+    required this.index,
     required this.onComplete,
   });
+
+  String _orderTypeEmoji(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('dine')) return '🍽️';
+    if (t.contains('take')) return '🛍️';
+    if (t.contains('delivery')) return '🚴';
+    return '📦';
+  }
+
+  LinearGradient _accentGradient() {
+    final gradients = [
+      const LinearGradient(
+          colors: [Color(0xFFFFE0CC), Color(0xFFFFCDB5)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight),
+      const LinearGradient(
+          colors: [Color(0xFFFFF0CC), Color(0xFFFFE4A0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight),
+      const LinearGradient(
+          colors: [Color(0xFFEDF9EC), Color(0xFFCCF0CB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight),
+      const LinearGradient(
+          colors: [Color(0xFFE8F4FD), Color(0xFFCDE8FB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight),
+    ];
+    return gradients[index % gradients.length];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: CafeColors.olive.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+            color: CafeColors.flame.withOpacity(0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: _accentGradient(),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
               children: [
+                // Order type emoji badge
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _orderTypeEmoji(orderType),
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Order $orderLabel',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: CafeColors.charcoal,
+                        ),
+                      ),
+                      if (customerName != null && customerName!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_outline_rounded,
+                                size: 12, color: CafeColors.charcoal),
+                            const SizedBox(width: 3),
+                            Text(
+                              customerName!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: CafeColors.charcoal.withOpacity(0.6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: CafeColors.oliveLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Order $orderLabel',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: CafeColors.olive,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: CafeColors.creme,
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: CafeColors.headerGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CafeColors.flame.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     orderType.toUpperCase(),
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: CafeColors.flame,
+                      color: Colors.white,
                     ),
                   ),
                 ),
               ],
             ),
-            if (customerName != null && customerName!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.person_outline_rounded,
-                      size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(customerName!,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                ],
-              ),
-            ],
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            ...items.map((item) {
-              final name = item['name'] ?? 'Unknown';
-              final rawQty = item['qty'] ??
-                  item['quantity'] ??
-                  item['count'] ??
-                  item['amount'] ??
-                  1;
-              final qty = int.tryParse(rawQty.toString()) ?? 1;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      margin: const EdgeInsets.only(right: 8, top: 1),
-                      decoration: const BoxDecoration(
-                        color: CafeColors.flame,
-                        shape: BoxShape.circle,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              children: items.map((item) {
+                final name = item['name'] ?? 'Unknown';
+                final rawQty = item['qty'] ??
+                    item['quantity'] ??
+                    item['count'] ??
+                    item['amount'] ??
+                    1;
+                final qty = int.tryParse(rawQty.toString()) ?? 1;
+                final price = (item['price'] as num?)?.toDouble();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        margin: const EdgeInsets.only(right: 10, top: 1),
+                        decoration: const BoxDecoration(
+                          gradient: CafeColors.headerGradient,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Text(name,
+                      Expanded(
+                        child: Text(
+                          name,
                           style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: CafeColors.charcoal)),
-                    ),
-                    Text('×$qty',
-                        style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: CafeColors.flame)),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            fontWeight: FontWeight.w600,
+                            color: CafeColors.charcoal,
+                          ),
+                        ),
+                      ),
+                      if (price != null)
+                        Text(
+                          'Rs ${(price * qty).toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: CafeColors.charcoal.withOpacity(0.5),
+                          ),
+                        ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          gradient: CafeColors.headerGradient,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '×$qty',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child:
+                Divider(color: CafeColors.flame.withOpacity(0.1), height: 20),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Row(
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total',
-                        style:
-                            TextStyle(fontSize: 11, color: Colors.grey[500])),
+                    Text(
+                      'Total',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: CafeColors.charcoal.withOpacity(0.45)),
+                    ),
                     Text(
                       'Rs ${total.toStringAsFixed(0)}',
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: CafeColors.charcoal,
                       ),
                     ),
                   ],
                 ),
+                const Spacer(),
                 DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF2ECC71), Color(0xFF27AE60)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2ECC71).withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: ElevatedButton.icon(
                     onPressed: onComplete,
                     icon: const Icon(Icons.print_rounded,
-                        color: Colors.white, size: 16),
+                        color: Colors.white, size: 17),
                     label: const Text(
                       'Print & Complete',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

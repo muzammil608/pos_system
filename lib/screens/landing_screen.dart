@@ -62,7 +62,6 @@ class _LandingScreenState extends State<LandingScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
 
-    // Try redirecting on every build once data is ready
     if (auth.user != null && auth.userData != null && !_navigated) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _redirect());
     }
@@ -77,7 +76,6 @@ class _LandingScreenState extends State<LandingScreen> {
       return const LoginScreen();
     }
 
-    // User exists but role still loading
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
     );

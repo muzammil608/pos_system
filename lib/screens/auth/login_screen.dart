@@ -1,6 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:pos_system/widgets/app_navigation.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
@@ -8,17 +11,93 @@ import '../../providers/cart_provider.dart';
 import '../../models/auth_login_result.dart';
 
 class _LoginColors {
-  static const Color ink = Color(0xFF171717);
+  static const Color flame = Color(0xFFFF4D1C);
+  static const Color espresso = Color(0xFF1E0F00);
+  static const Color latte = Color(0xFFFFF3E8);
+  static const Color charcoal = Color(0xFF2C2C2C);
   static const Color error = Color(0xFFD32F2F);
-  static const Color fieldBg = Color(0xE0FFFFFF);
 
-  static const LinearGradient bg = LinearGradient(
-    colors: [Color(0xFFFFD61E), Color(0xFFFFC400), Color(0xFFFFB900)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
+  static const LinearGradient bgGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF6B35), Color(0xFFFF8C42)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
 
-  static const Color scaffoldBg = Color(0xFFFFB900);
+  static const LinearGradient buttonGradient = LinearGradient(
+    colors: [Color(0xFFFF4D1C), Color(0xFFFF8C42)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+class _Breakpoint {
+  static const double xs = 360;
+  static const double sm = 480;
+  static const double md = 768;
+  static const double lg = 1024;
+}
+
+class _ResponsiveLayout {
+  _ResponsiveLayout(double screenWidth, double screenHeight) {
+    if (screenWidth < _Breakpoint.xs) {
+      cardMaxWidth = screenWidth - 32;
+    } else if (screenWidth < _Breakpoint.sm) {
+      cardMaxWidth = screenWidth - 48;
+    } else if (screenWidth < _Breakpoint.md) {
+      cardMaxWidth = 420;
+    } else if (screenWidth < _Breakpoint.lg) {
+      cardMaxWidth = 460;
+    } else {
+      cardMaxWidth = 480;
+    }
+
+    horizontalPadding = screenWidth < _Breakpoint.xs ? 12.0 : 24.0;
+    verticalPadding = screenHeight < 600 ? 20.0 : 40.0;
+
+    if (screenWidth < _Breakpoint.xs || screenHeight < 600) {
+      logoSize = 72.0;
+      logoIconSize = 52.0;
+    } else if (screenWidth < _Breakpoint.sm) {
+      logoSize = 90.0;
+      logoIconSize = 62.0;
+    } else {
+      logoSize = 118.0;
+      logoIconSize = 74.0;
+    }
+
+    if (screenWidth < _Breakpoint.xs || screenHeight < 600) {
+      titleFontSize = 36.0;
+    } else if (screenWidth < _Breakpoint.sm) {
+      titleFontSize = 46.0;
+    } else {
+      titleFontSize = 58.0;
+    }
+
+    final bool isCompact = screenHeight < 680;
+    spacingAfterLogo = isCompact ? 6.0 : 12.0;
+    spacingAfterTitle = isCompact ? 6.0 : 10.0;
+    spacingBeforeCard = isCompact ? 20.0 : 36.0;
+    spacingAfterCard = isCompact ? 20.0 : 36.0;
+
+    cardPadding = screenWidth < _Breakpoint.xs
+        ? const EdgeInsets.fromLTRB(14, 22, 14, 20)
+        : const EdgeInsets.fromLTRB(24, 28, 24, 24);
+
+    allowScroll = !kIsWeb || screenHeight < 600;
+  }
+
+  late double cardMaxWidth;
+  late double horizontalPadding;
+  late double verticalPadding;
+  late double logoSize;
+  late double logoIconSize;
+  late double titleFontSize;
+  late double spacingAfterLogo;
+  late double spacingAfterTitle;
+  late double spacingBeforeCard;
+  late double spacingAfterCard;
+  late EdgeInsets cardPadding;
+  late bool allowScroll;
 }
 
 class LoginScreen extends StatefulWidget {
@@ -101,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       setState(() {
         _emailError = result!.emailError;
-        _passwordError = result!.passwordError;
+        _passwordError = result.passwordError;
         _isLoading = false;
       });
     }
@@ -148,7 +227,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final bool isEmptyError = _emailError == 'Please fill out required field!';
     return TextField(
       controller: _emailController,
-      style: const TextStyle(fontSize: 15, color: _LoginColors.ink),
+      style: const TextStyle(
+        fontSize: 15,
+        color: _LoginColors.charcoal,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: _fieldDecoration(
         hint: 'Email address',
         icon: Icons.email_outlined,
@@ -167,7 +250,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextField(
       controller: _passwordController,
       obscureText: _obscurePassword,
-      style: const TextStyle(fontSize: 15, color: _LoginColors.ink),
+      style: const TextStyle(
+        fontSize: 15,
+        color: _LoginColors.charcoal,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: _fieldDecoration(
         hint: 'Password',
         icon: Icons.lock_outline_rounded,
@@ -179,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _obscurePassword
                 ? Icons.visibility_off_outlined
                 : Icons.visibility_outlined,
-            color: _LoginColors.ink.withOpacity(0.45),
+            color: _LoginColors.charcoal.withOpacity(0.4),
             size: 20,
           ),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -198,37 +285,49 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       filled: true,
-      fillColor: _LoginColors.fieldBg,
+      fillColor: Colors.white.withOpacity(0.78),
       hintText: isEmptyError ? 'Please fill out required field!' : hint,
       hintStyle: TextStyle(
         color: isEmptyError
             ? _LoginColors.error
-            : _LoginColors.ink.withOpacity(0.45),
+            : _LoginColors.charcoal.withOpacity(0.45),
         fontSize: 14,
-        fontWeight: isEmptyError ? FontWeight.w600 : FontWeight.normal,
+        fontWeight: isEmptyError ? FontWeight.w700 : FontWeight.w500,
       ),
-      prefixIcon: Icon(icon,
-          color: hasError ? _LoginColors.error : _LoginColors.ink, size: 20),
+      prefixIcon: Icon(
+        icon,
+        color: hasError
+            ? _LoginColors.error
+            : _LoginColors.charcoal.withOpacity(0.55),
+        size: 20,
+      ),
       suffixIcon: suffixIcon,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       errorText: errorText,
       errorStyle: const TextStyle(
-          color: _LoginColors.error, fontSize: 12, fontWeight: FontWeight.w600),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        color: _LoginColors.error,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide.none,
+      ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(
-          color: hasError
-              ? _LoginColors.error
-              : _LoginColors.ink.withOpacity(0.18),
-          width: hasError ? 1.5 : 1.0,
+          color: hasError ? _LoginColors.error : Colors.transparent,
+          width: hasError ? 1.5 : 0,
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(
-            color: hasError ? _LoginColors.error : _LoginColors.ink,
-            width: 2.0),
+          color: hasError
+              ? _LoginColors.error
+              : _LoginColors.flame.withOpacity(0.6),
+          width: 2.0,
+        ),
       ),
     );
   }
@@ -236,91 +335,128 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _LoginColors.scaffoldBg,
+      resizeToAvoidBottomInset: true,
+      backgroundColor: _LoginColors.espresso,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Container(
-              // Background gradient and pattern covers everything
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              decoration: const BoxDecoration(gradient: _LoginColors.bg),
-              child: CustomPaint(
-                painter: _FoodPatternPainter(),
-                child: Center(
-                  // CENTERED CONTENT FOR WEB
-                  child: ConstrainedBox(
-                    // Limit width to 450px for a "card" feel on web, full width on mobile
-                    constraints: const BoxConstraints(maxWidth: 450),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 40),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const _BrandMark(),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'ORION',
-                            style: TextStyle(
-                              color: _LoginColors.ink,
-                              fontSize: 58,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 4,
-                              height: 0.95,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildDividerRow('PIZZA RESTAURANT'),
-                          const SizedBox(height: 36),
+          final layout = _ResponsiveLayout(
+            constraints.maxWidth,
+            constraints.maxHeight,
+          );
 
-                          // The Login Card
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(22, 26, 22, 22),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(28),
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.5),
-                                  width: 1.5),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Sign in',
-                                  style: TextStyle(
-                                    color: _LoginColors.ink,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                _buildEmailField(),
-                                const SizedBox(height: 12),
-                                _buildPasswordField(),
-                                const SizedBox(height: 20),
-                                _buildLoginButton(),
-                                const SizedBox(height: 18),
-                                _buildOrDivider(),
-                                const SizedBox(height: 14),
-                                _buildGoogleButton(),
-                              ],
-                            ),
+          final Widget content = Container(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            decoration: const BoxDecoration(gradient: _LoginColors.bgGradient),
+            child: CustomPaint(
+              painter: _FoodPatternPainter(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: layout.cardMaxWidth),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: layout.horizontalPadding,
+                      vertical: layout.verticalPadding,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _BrandMark(
+                          outerSize: layout.logoSize,
+                          iconSize: layout.logoIconSize,
+                        ),
+                        SizedBox(height: layout.spacingAfterLogo),
+                        Text(
+                          'ORION',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: layout.titleFontSize,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 4,
+                            height: 0.95,
+                            shadows: const [
+                              Shadow(
+                                color: Color(0x44000000),
+                                blurRadius: 12,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
-
-                          const SizedBox(height: 36),
-                          _buildFooter(),
-                        ],
-                      ),
+                        ),
+                        SizedBox(height: layout.spacingAfterTitle),
+                        _buildDividerRow('PIZZA RESTAURANT'),
+                        SizedBox(height: layout.spacingBeforeCard),
+                        _buildLoginCard(layout),
+                        SizedBox(height: layout.spacingAfterCard),
+                        _buildFooter(),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
           );
+
+          if (layout.allowScroll) {
+            return SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: content,
+            );
+          }
+          return SizedBox.expand(child: content);
         },
+      ),
+    );
+  }
+
+  Widget _buildLoginCard(_ResponsiveLayout layout) {
+    return Container(
+      width: double.infinity,
+      padding: layout.cardPadding,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: Colors.white.withOpacity(0.08),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.28),
+          width: 1.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _LoginColors.espresso.withOpacity(0.20),
+            blurRadius: 40,
+            spreadRadius: -4,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.18),
+            blurRadius: 1,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Sign in',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildEmailField(),
+          const SizedBox(height: 12),
+          _buildPasswordField(),
+          const SizedBox(height: 20),
+          _buildLoginButton(),
+          const SizedBox(height: 18),
+          _buildOrDivider(),
+          const SizedBox(height: 14),
+          _buildGoogleButton(),
+        ],
       ),
     );
   }
@@ -329,39 +465,35 @@ class _LoginScreenState extends State<LoginScreen> {
     return SizedBox(
       width: double.infinity,
       height: 52,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: _LoginColors.ink,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-                color: _LoginColors.ink.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4)),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _handleEmailLogin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _handleEmailLogin,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _LoginColors.espresso,
+          foregroundColor: Colors.white,
+          shadowColor: _LoginColors.espresso.withOpacity(0.45),
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: _isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(Colors.white)))
-              : const Text('LOGIN',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5)),
         ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                ),
+              )
+            : const Text(
+                'LOGIN',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                ),
+              ),
       ),
     );
   }
@@ -369,16 +501,20 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildOrDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: _LoginColors.ink.withOpacity(0.3))),
+        Expanded(child: Divider(color: Colors.white.withOpacity(0.35))),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('OR',
-              style: TextStyle(
-                  color: _LoginColors.ink.withOpacity(0.6),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13)),
+          child: Text(
+            'OR',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.70),
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 1.0,
+            ),
+          ),
         ),
-        Expanded(child: Divider(color: _LoginColors.ink.withOpacity(0.3))),
+        Expanded(child: Divider(color: Colors.white.withOpacity(0.35))),
       ],
     );
   }
@@ -390,21 +526,26 @@ class _LoginScreenState extends State<LoginScreen> {
       child: OutlinedButton(
         onPressed: _isLoading ? null : _handleGoogleLogin,
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white.withOpacity(0.8),
-          side: BorderSide(color: _LoginColors.ink.withOpacity(0.18)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white.withOpacity(0.78),
+          side: BorderSide(color: Colors.white.withOpacity(0.80), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset('assets/images/google_logo.png', height: 22, width: 22),
             const SizedBox(width: 10),
-            const Text('Continue with Google',
-                style: TextStyle(
-                    color: _LoginColors.ink,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              'Continue with Google',
+              style: TextStyle(
+                color: _LoginColors.charcoal.withOpacity(0.85),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -416,18 +557,21 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const SizedBox(
-            width: 42, child: Divider(color: _LoginColors.ink, thickness: 2)),
+            width: 42, child: Divider(color: Colors.white54, thickness: 1.5)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(text,
-              style: const TextStyle(
-                  color: _LoginColors.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2)),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+            ),
+          ),
         ),
         const SizedBox(
-            width: 42, child: Divider(color: _LoginColors.ink, thickness: 2)),
+            width: 42, child: Divider(color: Colors.white54, thickness: 1.5)),
       ],
     );
   }
@@ -439,61 +583,103 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-                width: 82,
+                width: 72,
                 child: Divider(
-                    color: _LoginColors.ink.withOpacity(0.3), thickness: 1)),
+                    color: Colors.white.withOpacity(0.35), thickness: 1)),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
               child: Icon(Icons.local_pizza_rounded,
-                  color: _LoginColors.ink, size: 20),
+                  color: Colors.white70, size: 18),
             ),
             SizedBox(
-                width: 82,
+                width: 72,
                 child: Divider(
-                    color: _LoginColors.ink.withOpacity(0.3), thickness: 1)),
+                    color: Colors.white.withOpacity(0.35), thickness: 1)),
           ],
         ),
         const SizedBox(height: 8),
-        const Text('Software By Orion Solutions',
-            style: TextStyle(
-                color: _LoginColors.ink,
-                fontSize: 14,
-                fontWeight: FontWeight.w600)),
+        const Text(
+          'Software By Orion Solutions',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 }
 
-// ─── Brand Mark & Pattern Painter Classes (Remained same) ─────────────────────────
 class _BrandMark extends StatelessWidget {
-  const _BrandMark();
+  const _BrandMark({this.outerSize = 118, this.iconSize = 74});
+
+  final double outerSize;
+  final double iconSize;
+
   @override
   Widget build(BuildContext context) {
+    final double innerSize = outerSize * 0.815;
     return SizedBox(
-      width: 118,
-      height: 118,
+      width: outerSize,
+      height: outerSize,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
+          // Outer glow ring
           Container(
-            width: 96,
-            height: 96,
+            width: innerSize + 16,
+            height: innerSize + 16,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF171717), width: 6),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6))
-              ],
+              color: CafeColors.flame.withOpacity(0.05),
             ),
           ),
+          // Glass circle
+          ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                width: innerSize,
+                height: innerSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.orange.withOpacity(0.10),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.55),
+                    width: 2.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Top gloss on circle
+          Positioned(
+            top: innerSize * 0.08,
+            left: innerSize * 0.22,
+            child: Container(
+              width: innerSize * 0.35,
+              height: innerSize * 0.18,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: Colors.white.withOpacity(0.25),
+              ),
+            ),
+          ),
+          // Pizza icon
           Transform.rotate(
-              angle: -0.18,
-              child: const Icon(Icons.local_pizza_rounded,
-                  color: Color(0xFF171717), size: 74)),
+            angle: -0.18,
+            child: Icon(Icons.local_pizza_rounded,
+                color: Colors.white, size: iconSize),
+          ),
         ],
       ),
     );
@@ -502,40 +688,46 @@ class _BrandMark extends StatelessWidget {
 
 class _FoodPatternPainter extends CustomPainter {
   const _FoodPatternPainter();
+
   static const List<_PatternIcon> _icons = [
     _PatternIcon(Icons.local_pizza, Offset(0.08, 0.08), 60, -0.45),
-    _PatternIcon(Icons.eco_outlined, Offset(0.68, 0.06), 48, 0.3),
+    _PatternIcon(Icons.eco_outlined, Offset(0.68, 0.06), 48, 0.30),
     _PatternIcon(Icons.local_pizza, Offset(0.86, 0.12), 62, 0.42),
     _PatternIcon(Icons.circle_outlined, Offset(0.26, 0.17), 44, -0.25),
     _PatternIcon(Icons.local_dining, Offset(0.08, 0.28), 42, 0.15),
     _PatternIcon(Icons.eco_outlined, Offset(0.86, 0.30), 44, -0.12),
     _PatternIcon(Icons.local_pizza, Offset(0.14, 0.43), 60, -0.52),
-    _PatternIcon(Icons.circle_outlined, Offset(0.72, 0.39), 42, 0.2),
+    _PatternIcon(Icons.circle_outlined, Offset(0.72, 0.39), 42, 0.20),
     _PatternIcon(Icons.local_pizza, Offset(0.82, 0.61), 64, 0.42),
     _PatternIcon(Icons.eco_outlined, Offset(0.58, 0.65), 54, -0.24),
     _PatternIcon(Icons.circle_outlined, Offset(0.20, 0.71), 38, 0.18),
-    _PatternIcon(Icons.local_pizza, Offset(0.08, 0.90), 58, -0.5),
+    _PatternIcon(Icons.local_pizza, Offset(0.08, 0.90), 58, -0.50),
     _PatternIcon(Icons.circle_outlined, Offset(0.75, 0.88), 40, 0.12),
-    _PatternIcon(Icons.eco_outlined, Offset(0.88, 0.78), 44, 0.3),
+    _PatternIcon(Icons.eco_outlined, Offset(0.88, 0.78), 44, 0.30),
   ];
 
   @override
   void paint(Canvas canvas, Size size) {
-    const color = Color(0x20171717);
+    const color = Color(0x18FFFFFF);
     for (final icon in _icons) {
       final painter = TextPainter(
         text: TextSpan(
           text: String.fromCharCode(icon.icon.codePoint),
           style: TextStyle(
-              color: color,
-              fontSize: icon.size,
-              fontFamily: icon.icon.fontFamily,
-              package: icon.icon.fontPackage),
+            color: color,
+            fontSize: icon.size,
+            fontFamily: icon.icon.fontFamily,
+            package: icon.icon.fontPackage,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final position =
-          Offset(size.width * icon.position.dx, size.height * icon.position.dy);
+
+      final position = Offset(
+        size.width * icon.position.dx,
+        size.height * icon.position.dy,
+      );
+
       canvas.save();
       canvas.translate(position.dx, position.dy);
       canvas.rotate(icon.rotation);

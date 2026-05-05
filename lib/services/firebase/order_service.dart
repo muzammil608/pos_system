@@ -23,7 +23,6 @@ class OrderService {
       throw StateError('User not authenticated');
     }
 
-    // ✅ Per-owner counter — prevents order number conflicts between admins
     final counterRef = FirebaseFirestore.instance
         .collection('counters')
         .doc('order_number_$ownerId');

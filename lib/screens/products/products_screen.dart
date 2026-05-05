@@ -3,14 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_theme.dart';
+// import '../../core/theme/app_theme.dart';
 import '../../core/utils/icon_helper.dart';
 import '../../models/product_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/app_navigation.dart';
 
-// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
 class CafeColors {
   static const Color flame = Color(0xFFFF4D1C);
   static const Color amber = Color(0xFFFFA724);
@@ -46,7 +45,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.dispose();
   }
 
-  // ─── Product Form Bottom Sheet ─────────────────────────────────────────────
   void _showProductForm(BuildContext context, {Product? product}) {
     final nameController = TextEditingController(text: product?.name ?? '');
     final priceController = TextEditingController(
@@ -127,7 +125,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Name field
                       _StyledField(
                         controller: nameController,
                         label: 'Product Name',
@@ -140,7 +137,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Price field
                       _StyledField(
                         controller: priceController,
                         label: 'Price',
@@ -149,8 +145,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty)
+                          if (v == null || v.trim().isEmpty) {
                             return 'Price is required';
+                          }
                           if (double.tryParse(v.trim()) == null) {
                             return 'Enter a valid number';
                           }
@@ -159,7 +156,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Category field
                       _StyledField(
                         controller: categoryController,
                         label: 'Category',
@@ -179,7 +175,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Icon picker label
                       const Text(
                         'Choose Icon',
                         style: TextStyle(
@@ -190,7 +185,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Icon picker row
                       SizedBox(
                         height: 56,
                         child: ListView.separated(
@@ -263,8 +257,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 onPressed: provider.isLoading
                                     ? null
                                     : () async {
-                                        if (!formKey.currentState!.validate())
+                                        if (!formKey.currentState!.validate()) {
                                           return;
+                                        }
 
                                         final name = nameController.text.trim();
                                         final price = double.parse(
@@ -375,7 +370,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  // ─── Delete Confirmation Dialog ────────────────────────────────────────────
   void _confirmDelete(BuildContext context, Product product) {
     showDialog(
       context: context,
@@ -523,8 +517,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return Scaffold(
           backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/products'),
-
-          // ─── AppBar ──────────────────────────────────────────────────────
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(64),
             child: Container(
@@ -572,11 +564,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
           ),
-
-          // ─── Body ────────────────────────────────────────────────────────
           body: Column(
             children: [
-              // ─── Search + Add Row ───────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Row(
@@ -654,8 +643,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // ─── Products Stream ────────────────────────────────────────
               Expanded(
                 child: StreamBuilder<List<Product>>(
                   stream: context.read<ProductProvider>().productsStream,
@@ -692,7 +679,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                     return Column(
                       children: [
-                        // Category chips
                         if (categories.length > 1)
                           SizedBox(
                             height: 36,
@@ -921,7 +907,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 }
 
-// ─── Styled Text Field ─────────────────────────────────────────────────────────
 class _StyledField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -989,7 +974,6 @@ class _StyledField extends StatelessWidget {
   }
 }
 
-// ─── Product Card ──────────────────────────────────────────────────────────────
 class _ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback onEdit;
@@ -1031,7 +1015,6 @@ class _ProductCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // Name + category
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,7 +1048,6 @@ class _ProductCard extends StatelessWidget {
               ),
             ),
 
-            // Price
             Text(
               'Rs ${product.price.toStringAsFixed(0)}',
               style: const TextStyle(
@@ -1076,7 +1058,6 @@ class _ProductCard extends StatelessWidget {
             ),
             const SizedBox(width: 4),
 
-            // Edit
             IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
@@ -1093,7 +1074,6 @@ class _ProductCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
             ),
 
-            // Delete
             IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),

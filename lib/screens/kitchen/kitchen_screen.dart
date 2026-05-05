@@ -3,13 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/theme/app_theme.dart';
+// import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/firebase/order_service.dart';
 import '../../services/firebase/report_service.dart';
 import '../../widgets/app_navigation.dart';
 
-// ─── Vibrant Café Color Palette ───────────────────────────────────────────────
 class CafeColors {
   static const Color flame = Color(0xFFFF4D1C);
   static const Color amber = Color(0xFFFFA724);
@@ -107,8 +106,6 @@ class _KitchenScreenState extends State<KitchenScreen>
         return Scaffold(
           backgroundColor: CafeColors.latte,
           drawer: AppNavigationDrawer(auth: auth, currentRoute: '/kitchen'),
-
-          // ─── AppBar ────────────────────────────────────────────────────────
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(64),
             child: Container(
@@ -171,11 +168,8 @@ class _KitchenScreenState extends State<KitchenScreen>
               ),
             ),
           ),
-
-          // ─── Body ──────────────────────────────────────────────────────────
           body: Column(
             children: [
-              // ─── Stats Row ────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: StreamBuilder<Map<String, int>>(
@@ -219,10 +213,7 @@ class _KitchenScreenState extends State<KitchenScreen>
                   },
                 ),
               ),
-
               const SizedBox(height: 12),
-
-              // ─── Section Label ────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -269,10 +260,7 @@ class _KitchenScreenState extends State<KitchenScreen>
                   ],
                 ),
               ),
-
               const SizedBox(height: 10),
-
-              // ─── Orders List ──────────────────────────────────────────────
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _ordersStream,
@@ -341,8 +329,6 @@ class _KitchenScreenState extends State<KitchenScreen>
               ),
             ],
           ),
-
-          // ─── FAB ───────────────────────────────────────────────────────────
           floatingActionButton: Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -450,7 +436,6 @@ class _KitchenScreenState extends State<KitchenScreen>
   }
 }
 
-// ─── Metric Card ───────────────────────────────────────────────────────────────
 class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
@@ -515,7 +500,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-// ─── Kitchen Order Card ────────────────────────────────────────────────────────
 class _KitchenOrderCard extends StatelessWidget {
   final String docId;
   final int orderNumber;
@@ -571,7 +555,6 @@ class _KitchenOrderCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // ─── Card Header ─────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             decoration: BoxDecoration(
@@ -659,8 +642,6 @@ class _KitchenOrderCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // ─── Items ───────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Column(
@@ -710,8 +691,6 @@ class _KitchenOrderCard extends StatelessWidget {
               }).toList(),
             ),
           ),
-
-          // ─── Action Row ───────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
             child: Row(

@@ -13,18 +13,17 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirestoreService _firestore = FirestoreService();
 
-  /// Ensure auth persistence is set once (LOCAL persistence survives app kill/restart)
   Future<void> ensurePersistence() async {
     if (_persistenceInitialized) {
-      debugPrint('🔍 PERSISTENCE-ALREADY: Skip');
+      debugPrint('PERSISTENCE-ALREADY: Skip');
       return;
     }
     try {
       await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
       _persistenceInitialized = true;
-      debugPrint('🔍 PERSISTENCE-SUCCESS: LOCAL persistence enabled');
+      debugPrint('PERSISTENCE-SUCCESS: LOCAL persistence enabled');
     } catch (e) {
-      debugPrint('🔍 PERSISTENCE-ERROR: $e - Continuing without persistence');
+      debugPrint('PERSISTENCE-ERROR: $e - Continuing without persistence');
       _persistenceInitialized = true; // Prevent retries
     }
   }
