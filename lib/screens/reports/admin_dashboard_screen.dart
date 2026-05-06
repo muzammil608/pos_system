@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/firebase/report_service.dart';
 import '../../../widgets/status_donut_chart.dart';
-// import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/app_navigation.dart';
 
@@ -320,25 +319,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                     ],
                   ),
-                  child: Column(
-                    children: [
-                      StatusDonutChart(ownerId: auth.ownerId, size: 280),
-                      const SizedBox(height: 12),
-                      // Legend
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _LegendDot(color: CafeColors.flame, label: 'Pending'),
-                          const SizedBox(width: 16),
-                          _LegendDot(color: CafeColors.olive, label: 'Ready'),
-                          const SizedBox(width: 16),
-                          _LegendDot(
-                              color: const Color(0xFF6B7280),
-                              label: 'Completed'),
-                        ],
-                      ),
-                    ],
-                  ),
+                  // FIX: Removed the duplicate legend Row that was manually
+                  // added here. StatusDonutChart already renders its own
+                  // legend internally, so having both caused Pending, Ready
+                  // and Completed labels to appear twice under the chart.
+                  child: StatusDonutChart(ownerId: auth.ownerId, size: 280),
                 ),
 
                 const SizedBox(height: 24),
@@ -493,37 +478,6 @@ class _StatusCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Legend Dot ────────────────────────────────────────────────────────────────
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: CafeColors.charcoal.withOpacity(0.6),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -54,6 +54,10 @@ class _ResponsiveLayout {
     horizontalPadding = screenWidth < _Breakpoint.xs ? 12.0 : 24.0;
     verticalPadding = screenHeight < 600 ? 20.0 : 40.0;
 
+    // Clamp cardMaxWidth to the screen width minus padding on both sides so
+    // the card never overflows on narrow mobile screens.
+    cardMaxWidth = cardMaxWidth.clamp(0, screenWidth - horizontalPadding * 2);
+
     if (screenWidth < _Breakpoint.xs || screenHeight < 600) {
       logoSize = 72.0;
       logoIconSize = 52.0;
@@ -83,7 +87,11 @@ class _ResponsiveLayout {
         ? const EdgeInsets.fromLTRB(14, 22, 14, 20)
         : const EdgeInsets.fromLTRB(24, 28, 24, 24);
 
-    allowScroll = !kIsWeb || screenHeight < 600;
+    // FIX: Always allow scroll. On mobile web the keyboard shrinks the
+    // viewport and without scrolling the content gets clipped. The old
+    // `!kIsWeb` condition disabled scrolling on all web targets, which
+    // prevented the page from adjusting when the soft keyboard appeared.
+    allowScroll = true;
   }
 
   late double cardMaxWidth;
@@ -227,6 +235,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final bool isEmptyError = _emailError == 'Please fill out required field!';
     return TextField(
       controller: _emailController,
+      // FIX: Explicitly set keyboard type and enable interactive selection
+      // so the virtual keyboard opens reliably on mobile web browsers.
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      autocorrect: false,
+      enableSuggestions: false,
       style: const TextStyle(
         fontSize: 15,
         color: _LoginColors.charcoal,
@@ -250,6 +264,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return TextField(
       controller: _passwordController,
       obscureText: _obscurePassword,
+      // FIX: Explicit keyboard type keeps the default keyboard on mobile web
+      // and ensures the field is focusable / tappable on all browsers.
+      keyboardType: TextInputType.visiblePassword,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _isLoading ? null : _handleEmailLogin(),
       style: const TextStyle(
         fontSize: 15,
         color: _LoginColors.charcoal,
@@ -335,6 +354,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // FIX: Set to true so Flutter resizes the body when the keyboard
+      // appears. Combined with SingleChildScrollView this lets the user
+      // scroll to see the focused field without any content being hidden.
       resizeToAvoidBottomInset: true,
       backgroundColor: _LoginColors.espresso,
       body: LayoutBuilder(
@@ -344,65 +366,74 @@ class _LoginScreenState extends State<LoginScreen> {
             constraints.maxHeight,
           );
 
-          final Widget content = Container(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            decoration: const BoxDecoration(gradient: _LoginColors.bgGradient),
-            child: CustomPaint(
-              painter: _FoodPatternPainter(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: layout.cardMaxWidth),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: layout.horizontalPadding,
-                      vertical: layout.verticalPadding,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _BrandMark(
-                          outerSize: layout.logoSize,
-                          iconSize: layout.logoIconSize,
+          // FIX: Always wrap in SingleChildScrollView so the content can
+          // scroll up when the soft keyboard appears on mobile web.
+          // Use keyboardDismissBehavior so tapping outside a field hides
+          // the keyboard naturally on touch devices.
+          return SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: ConstrainedBox(
+              // FIX: minHeight ensures the content fills the screen when the
+              // keyboard is hidden, while allowing it to grow taller when the
+              // keyboard is shown (unlike the old fixed-height Container).
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Container(
+                  decoration:
+                      const BoxDecoration(gradient: _LoginColors.bgGradient),
+                  child: CustomPaint(
+                    painter: _FoodPatternPainter(),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: layout.horizontalPadding,
+                          vertical: layout.verticalPadding,
                         ),
-                        SizedBox(height: layout.spacingAfterLogo),
-                        Text(
-                          'ORION',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: layout.titleFontSize,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 4,
-                            height: 0.95,
-                            shadows: const [
-                              Shadow(
-                                color: Color(0x44000000),
-                                blurRadius: 12,
-                                offset: Offset(0, 4),
+                        child: ConstrainedBox(
+                          constraints:
+                              BoxConstraints(maxWidth: layout.cardMaxWidth),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _BrandMark(
+                                outerSize: layout.logoSize,
+                                iconSize: layout.logoIconSize,
                               ),
+                              SizedBox(height: layout.spacingAfterLogo),
+                              Text(
+                                'ORION',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: layout.titleFontSize,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 4,
+                                  height: 0.95,
+                                  shadows: const [
+                                    Shadow(
+                                      color: Color(0x44000000),
+                                      blurRadius: 12,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: layout.spacingAfterTitle),
+                              _buildDividerRow('PIZZA RESTAURANT'),
+                              SizedBox(height: layout.spacingBeforeCard),
+                              _buildLoginCard(layout),
+                              SizedBox(height: layout.spacingAfterCard),
+                              _buildFooter(),
                             ],
                           ),
                         ),
-                        SizedBox(height: layout.spacingAfterTitle),
-                        _buildDividerRow('PIZZA RESTAURANT'),
-                        SizedBox(height: layout.spacingBeforeCard),
-                        _buildLoginCard(layout),
-                        SizedBox(height: layout.spacingAfterCard),
-                        _buildFooter(),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           );
-
-          if (layout.allowScroll) {
-            return SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: content,
-            );
-          }
-          return SizedBox.expand(child: content);
         },
       ),
     );
